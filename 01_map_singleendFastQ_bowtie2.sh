@@ -1,21 +1,19 @@
 #!/bin/bash
 
-# USAGE: bash 01_map_pairedendFastQ_bowtie2.sh input/fastq/hgStomachF35 output/hgStomachF35 hg19
+# USAGE: bash 01_map_pairedendFastQ_bowtie2.sh input/fastq/hgStomachF35 output/hgStomachF35 mm10
 
 # Set user defined environment variables
-jobdir="/usr/users/gjain/bin/projects/atacseq"
-fastqdir=${jobdir}/$1
-bamdir=${jobdir}/$2
+jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+fastqdir=$1
+bamdir=$2
 species=$3
-scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2"
-stdoutFile="${bamdir}/map_fastQ_bowtie2.out" 
-errorsFile="${bamdir}/map_fastQ_bowtie2.err" 
-bt2index="/usr/users/gjain/bin/libs/bowtie2/indexes/${species}/${species}"
+scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/$(basename ${fastqdir})"
+bt2index="/home/rad/packages/bowtie2/indexes/${species}"
 
 # Create required dirs
 mkdir -p ${scriptsdir} ${bamdir}
 
-for f in ${fastqdir}/*_R1_*.fastq.gz
+for f in ${fastqdir}/*.fastq.gz
 do 
  # Get bamfile name
  fastQfile=$(basename "$f" .fastq.gz)
@@ -50,9 +48,7 @@ do
 
  # Write the command in the script file and give it correct permission to run
  chmod 775 "${scriptFile}"
+ echo "${scriptFile}"
 
- # Submit the job
- echo -e "Submitting job for ${bamfile}" 
- bsub -q fat -W 36:00 -n 8 -e "${errorsFile}" -o "${stdoutFile}" -J ${jobname} sh "${scriptFile}"
- echo -e " "
 done
+
