@@ -16,4 +16,4 @@ for k in keys:
 	sys.stdout.write(k)
 	for j in keys:
 		sys.stdout.write('\t' + str(matrix[k][j]))
-		sys.stdout.write('\n')
+	sys.stdout.write('\n')
