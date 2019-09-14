@@ -31,15 +31,16 @@ ls ${bamdir}/*.bam | parallel --progress --eta -j 16 'samtools stats -@ 32 {} > 
 mappingLogsDir="${outputDir}/logs/mappingLogs"; mkdir -p ${mappingLogsDir}; mv ${bamdir}/*.logs ${mappingLogsDir}
 multiqc -o ${multiqcDir} -n 03_mapping_stats_${projName} ${mappingLogsDir}
 
-
 # Get peaks and homer annotation
 jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
-user="christine"
 species="mm10"
+user="christine"
 projName="AGRad_ATACseq_MUC001"
-bamdir="output/${user}/AGRad_ATACseq_MUC001/mapping"
-outputDir="output/${user}/AGRad_ATACseq_MUC001/peaks"
+fastqdir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/fastq"
+outputDir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001"
+bamdir="${outputDir}/bams/trimmed"
+peaksdir="${outputDir}/peaks"
 scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
 mkdir -p ${scriptsdir}
-for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${outputDir} ${species} ${projName}; done;
+for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
 cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}

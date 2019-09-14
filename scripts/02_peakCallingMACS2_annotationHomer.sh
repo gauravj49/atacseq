@@ -4,21 +4,21 @@
 
 # Get input arguments
 jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
-trtBam=${jobdir}/$1 # output/hgStomachF35/ENCFF300KHX_atacseq_hg_R1_PE100nt_subset1000.bam
-outdir=${jobdir}/$2 # output/hgStomachF35
+trtBam=$1 # output/hgStomachF35/ENCFF300KHX_atacseq_hg_R1_PE100nt_subset1000.bam
+outdir=$2 # output/hgStomachF35/peaks
 species=$3          # hg19 or mm10
 projName=$4         # hgStomachF35
 
 # Set user defined environment variables
 bname=$(basename ${trtBam} .bam)
-peaksoutdir=${outdir}/${bname}/macs2peaks
-gooutdir=${outdir}/${bname}/GOterms
-motifoutdir=${outdir}/${bname}/motifs
-logdir=${outdir}/${bname}/logs
+sampledir=${outdir}/${bname}
+peaksoutdir=${sampledir}/macs2peaks
+gooutdir=${sampledir}/GOterms
+motifoutdir=${sampledir}/motifs
 genomeFasta="${jobdir}/input/annotation/gtf/${species}_genes.gtf"
 genomeFasta="${jobdir}/input/annotation/genomeData/${species}.fa"
 scriptsdir=${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}
-logFile="${logdir}/${bname}_peakCallingMacs2.log" 
+logFile="${sampledir}/${bname}_peakCallingMacs2.log" 
 homer="/home/rad/packages/homer/bin"
 gSPC="human"
 spc="hs"
@@ -32,7 +32,7 @@ if [ ${species} = "mm9" ]; then
 fi
 
 # Create required dirs
-mkdir -p ${scriptsdir} ${peaksoutdir} ${gooutdir} ${motifoutdir} ${logdir}
+mkdir -p ${scriptsdir} ${peaksoutdir} ${gooutdir} ${motifoutdir} ${sampledir}
 
 # Get the jobname to submit for each job
 
@@ -53,19 +53,19 @@ echo "" >> "${scriptFile}"
 peaksFile=${peaksoutdir}/${bname}_peaks.narrowPeak
 annPeaks=${peaksoutdir}/annotated_${bname}_peaks.txt
 echo "# Perform peak annotation using Homer" >> "${scriptFile}"
-echo "${homer}/annotatePeaks.pl ${peaksFile} ${species} > ${annPeaks} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/annotatePeaks.pl -cpu 8 ${peaksFile} ${species} > ${annPeaks} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # GO Term Enrichment Using Homer
 entrezidsFile=${peaksoutdir}/entrezIDs_${bname}.txt
 echo "# Perform GO term enrichment using Homer 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "awk -F'\t' 'NR > 1 {print \$12}' ${annPeaks} > ${entrezidsFile} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
-echo "${homer}/findGO.pl ${entrezidsFile} ${gSPC} ${gooutdir} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/findGO.pl -p 8 ${entrezidsFile} ${gSPC} ${gooutdir} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # Motif Finding Using Homer
 echo "# Perform motif finding using Homer" >> "${scriptFile}"
-echo "${homer}/findMotifsGenome.pl ${annPeaks} ${species} ${motifoutdir} -len 6,10,15  2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/findMotifsGenome.pl -p 8 ${annPeaks} ${species} ${motifoutdir} -len 6,8,10  2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # queue="fat"

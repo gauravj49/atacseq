@@ -1,8 +1,19 @@
 # Principal component analysis
 # Source: http://quinlanlab.org/tutorials/bedtools/bedtools.html
 
+# Get merged peaks
+# modify the peaks list and output file in the megrePeaks.sh file at the begining
+bash scripts/mergePeaks.sh 
+
+# Get analysis dirs
+mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis
+
+# Get summits peaks
+mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+rsync -avrP rsync -arvP  /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*_summits.bed /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+
 # Get Jaccard statistic for all pairwise comparisons
-cd output/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+cd /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
 parallel "bedtools jaccard -a {1} -b {2} \
          | awk 'NR>1' \
          | cut -f 3 \
@@ -16,55 +27,72 @@ find . \
     | sed -e s"/\.\///" \
     | perl -pi -e "s/.bed./.bed\t/" \
     | perl -pi -e "s/.jaccard:/\t/" \
-    > /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
+    > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
 
 # Get proper names
-cat /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt \
-| sed -e 's/_R1_001_summits.bed//g' \
-> tmp.txt && mv tmp.txt /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
+cat /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt \
+| sed -e 's/_R1_001_rmdup_summits.bed//g' \
+> tmp.txt && mv tmp.txt /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
 
 # Convert pairwise interaction to matrix
-cat /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt | python scripts/make_matrix.py > /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix
+cat /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt | python /home/rad/users/gaurav/projects/seqAnalysis/atacseq/scripts/make_matrix.py > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix
 
 # Get labels for each dataset
-cut -f 1 /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix > /home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt
+cut -f 1 /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt
 
 # Start up R.
 R
 
 library(ggplot2)
 library(RColorBrewer)
+library(viridis)
+library(wesanderson) # devtools::install_github("karthik/wesanderson")
 blues <- colorRampPalette(c('dark blue', 'light blue'))
 greens <- colorRampPalette(c('dark green', 'light green'))
 reds <- colorRampPalette(c('pink', 'dark red'))
  
-x <- read.table('/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix')
-labels <- read.table('/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt')
+x <- read.table('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix')
+labels <- read.table('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt')
 ngroups <- length(unique(labels))
 pca <- princomp(x)
 
-pdf('/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_pca.pdf')
+nb.cols <- dim(labels)[1]
+mycolors <- colorRampPalette(brewer.pal(9, "Set1"))(nb.cols)
+pdf('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_pca.pdf')
+qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = mycolors) 
 # qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = c(blues(4), greens(5), reds(5))) 
-qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = c(blues(5), greens(4), reds(6), blacks(3))) 
+# qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = c(blues(5), greens(4), reds(6), oranges(3))) 
+# qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values=wes_palette(n=18, name="GrandBudapest2"))
+# qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_viridis(discrete = TRUE, option = "D")+ scale_fill_viridis(discrete = TRUE)  
 dev.off()
 
-
-
-library(gplots)
-library(RColorBrewer)
-library(pheatmap)
-jaccard_table <- x[, -1]
-jaccard_matrix <- as.matrix(jaccard_table)
-
-# pdf('/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf')
-# heatmap.2(jaccard_matrix, col = brewer.pal(9,"Blues"), margins = c(14, 14), density.info = "none", lhei=c(2, 8), trace= "none")
-corrHeatmapFile = '/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf'
-pheatmap(jaccard_matrix, filename=corrHeatmapFile)
-dev.off()
-
+# Plot similarity heatmap
 ipython
-jmat = pd.read_csv("/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix", sep="\t", index_col=0) 
-sns.clustermap(jmat, vmax=0.02, cmap="ocean");                                                                                                                                 plt.savefig("/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
+jmat = pd.read_csv("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix", sep="\t", index_col=0) 
+sns.clustermap(jmat, vmax=0.02, cmap="ocean");                                                                                                                                 plt.savefig("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
+
+# Get the top 1% most varying genes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #  https://rockefelleruniversity.github.io/RU_ATAC_Workshop.html
@@ -72,7 +100,7 @@ sns.clustermap(jmat, vmax=0.02, cmap="ocean");                                  
 R
 #
 
-sortedBAM <- "/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/mapping/5320_LivMet-1_S11_R1_001.bam"
+sortedBAM <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/mapping/5320_LivMet-1_S11_R1_001.bam"
 
 
 library(Rsubread)
@@ -83,7 +111,7 @@ pmapped
 library(Rsamtools)
 library(ggplot2)
 library(magrittr)
-sortedBAMpng <- "/home/rad/users/gaurav/projects/seqAnalysis/atacseq/output/christine/AGRad_ATACseq_MUC001/analysis/5320_LivMet-1_S11_R1_001_mappedReadsDistribution.pdf"
+sortedBAMpng <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_LivMet-1_S11_R1_001_mappedReadsDistribution.pdf"
 pdf(sortedBAMpng);
 idxstatsBam(sortedBAM) %>% ggplot(aes(seqnames, mapped, fill = seqnames)) + geom_bar(stat = "identity") + coord_flip()
 dev.off()
