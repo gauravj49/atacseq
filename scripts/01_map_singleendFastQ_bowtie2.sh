@@ -13,7 +13,7 @@ bt2index="/home/rad/packages/bowtie2/indexes/${species}"
 bamDir="${outDir}/bams/trimmed"
 origFastqcDir="${outDir}/qc/fastqc/00_original"
 trimFastqcDir="${outDir}/qc/fastqc/01_trimmed"
-mappingLogsDir="${outDir}/logs/trimmingLogs
+mappingLogsDir="${outDir}/logs/trimmingLogs"
 trimmedFastDir="${outDir}/tempLocal/trimmed_fastq"
 
 # echo "${scriptsdir} ${bamDir} ${mappingLogsDir} ${trimmedFastDir} ${origFastqcDir} ${trimFastqcDir}"

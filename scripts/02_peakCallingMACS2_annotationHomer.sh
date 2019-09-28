@@ -53,19 +53,19 @@ echo "" >> "${scriptFile}"
 peaksFile=${peaksoutdir}/${bname}_peaks.narrowPeak
 annPeaks=${peaksoutdir}/annotated_${bname}_peaks.txt
 echo "# Perform peak annotation using Homer" >> "${scriptFile}"
-echo "${homer}/annotatePeaks.pl -cpu 8 ${peaksFile} ${species} > ${annPeaks} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/annotatePeaks.pl ${peaksFile} ${species} > ${annPeaks} -cpu 8 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # GO Term Enrichment Using Homer
 entrezidsFile=${peaksoutdir}/entrezIDs_${bname}.txt
 echo "# Perform GO term enrichment using Homer 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "awk -F'\t' 'NR > 1 {print \$12}' ${annPeaks} > ${entrezidsFile} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
-echo "${homer}/findGO.pl -p 8 ${entrezidsFile} ${gSPC} ${gooutdir} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/findGO.pl ${entrezidsFile} ${gSPC} ${gooutdir} -cpu 8 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # Motif Finding Using Homer
 echo "# Perform motif finding using Homer" >> "${scriptFile}"
-echo "${homer}/findMotifsGenome.pl -p 8 ${annPeaks} ${species} ${motifoutdir} -len 6,8,10  2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "${homer}/findMotifsGenome.pl ${annPeaks} ${species} ${motifoutdir} -len 6,8,10  -p 8 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # queue="fat"
