@@ -45,7 +45,7 @@ echo "#!/bin/bash" > "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # MACs Peak Calling
-echo "# Perform MACs peak calling 2>&1 | tee ${logFile}" >> "${scriptFile}"
+echo "# Perform MACs peak calling" >> "${scriptFile}"
 echo "macs2 callpeak --name ${bname} --treatment ${trtBam} --outdir ${peaksoutdir} --format BAM --pvalue 1e-5 --gsize ${spc} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
@@ -58,7 +58,7 @@ echo "" >> "${scriptFile}"
 
 # GO Term Enrichment Using Homer
 entrezidsFile=${peaksoutdir}/entrezIDs_${bname}.txt
-echo "# Perform GO term enrichment using Homer 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "# Perform GO term enrichment using Homer " >> "${scriptFile}"
 echo "awk -F'\t' 'NR > 1 {print \$12}' ${annPeaks} > ${entrezidsFile} 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "${homer}/findGO.pl ${entrezidsFile} ${gSPC} ${gooutdir} -cpu 8 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
