@@ -1,16 +1,52 @@
-# Principal component analysis
-# Source: http://quinlanlab.org/tutorials/bedtools/bedtools.html
+# pwd
+cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
 # Get merged peaks
-# modify the peaks list and output file in the megrePeaks.sh file at the begining
-bash scripts/mergePeaks.sh 
-
 # Get analysis dirs
 mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis
 
+# modify the peaks list and output file in the megrePeaks.sh file at the begining
+# List of summit.bed is in array in the mergePeaks.sh script
+bash scripts/mergePeaks.sh 
+
+# Get the tab seaprated raw counts of the merged peaks for all the samples
+# Using deeptools
+multiBamSummary BED-file --BED /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed --bamfiles /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.npz --outRawCounts /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab -p 64
+
+# Add peaknames to the file
+ipython
+pd.set_option('display.max_rows', 5)
+pd.set_option('display.max_columns', 8)
+pd.set_option('display.width', 1000)
+
+input_file  = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+output_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
+jmat = pd.read_csv(input_file, sep="\t")
+# Fix column names: From #chr to chr and remove <'>
+jmat.columns = jmat.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_r1_001_rmdup", '')
+# rename the first column from #chr to chr
+jmat.rename(columns={ jmat.columns[0]: "chr" }, inplace = True)
+# Add peaks names to the dataframe
+jmat.insert (3, "name", ["atacPeak_{0}".format(x) for x in jmat.index.tolist()])
+jmat['peakID'] = jmat['chr'].str.cat(jmat['start'].apply(str), sep='_').str.cat(jmat['end'].apply(str), sep='_').str.cat(jmat['name'], sep='_')
+# Get column names 
+colNames = jmat.columns.tolist()
+# Move peakID to the front
+colNames.insert(0, colNames.pop(colNames.index('peakID')))
+# Reorder columns using df.reindex() function
+jmat = jmat.reindex(columns= colNames)
+# Drop additional columns
+jmat.drop(columns=['chr','start','end','name'], inplace=True)
+jmat.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.0f')
+
+# Get the top 1% most varying genes
+
+# Principal component analysis
+# Source: http://quinlanlab.org/tutorials/bedtools/bedtools.html
+
 # Get summits peaks
 mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
-rsync -avrP rsync -arvP  /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*_summits.bed /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+rsync -arvP  /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*_summits.bed /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
 
 # Get Jaccard statistic for all pairwise comparisons
 cd /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
@@ -68,50 +104,9 @@ dev.off()
 
 # Plot similarity heatmap
 ipython
+sns.set(font_scale=0.3)
 jmat = pd.read_csv("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix", sep="\t", index_col=0) 
-sns.clustermap(jmat, vmax=0.02, cmap="ocean");                                                                                                                                 plt.savefig("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
+g = sns.clustermap(jmat, vmax=0.02, cmap="ocean"); 
+g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize = 5)
+plt.savefig("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
 
-# Get the top 1% most varying genes
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#  https://rockefelleruniversity.github.io/RU_ATAC_Workshop.html
-
-R
-#
-
-sortedBAM <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/mapping/5320_LivMet-1_S11_R1_001.bam"
-
-
-library(Rsubread)
-# Takes ~ 15 minutes on 3.1 GHz Intel Core i7 Mac pro
-pmapped <- propmapped(sortedBAM)
-pmapped
-
-library(Rsamtools)
-library(ggplot2)
-library(magrittr)
-sortedBAMpng <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_LivMet-1_S11_R1_001_mappedReadsDistribution.pdf"
-pdf(sortedBAMpng);
-idxstatsBam(sortedBAM) %>% ggplot(aes(seqnames, mapped, fill = seqnames)) + geom_bar(stat = "identity") + coord_flip()
-dev.off()
-
-
-library(ChIPseeker)
-
-MacsCalls_chr20_filteredAnno <- annotatePeak(MacsCalls_chr20_filtered, TxDb = TxDb.Hsapiens.UCSC.hg19.knownGene)
