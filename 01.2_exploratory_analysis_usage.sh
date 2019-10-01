@@ -121,7 +121,9 @@ ax.yaxis.set_ticks_position('left')
 ax.xaxis.set_ticks_position('bottom')
 # plt.show()
 screePlotPdf = "{0}_PCA_Scree_plot.pdf".format(get_file_info(input_file)[3])
-plt.savefig(screePlotPdf)
+# screePlotPdf = "{0}_PCA_Scree_plot_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(screePlotPdf,bbox_inches = 'tight')
+plt.close('all')
 
 # Visualize 2D Projection
 fig = plt.figure()
@@ -130,13 +132,45 @@ g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', style='groups
 box = g.axes.get_position() # get position of figure
 g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
 g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
-screePlotPdf = "{0}_PCA_plot.pdf".format(get_file_info(input_file)[3])
 ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
 ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
 ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
-plt.savefig(screePlotPdf)
-plt.show()
+pcaPlotPdf = "{0}_PCA_plot.pdf".format(get_file_info(input_file)[3])
+# pcaPlotPdf = "{0}_PCA_plot_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
+# plt.show()
+plt.close('all')
 
+# Generate the heatmap of top 1% varied peaks
+sns.set(font_scale=0.5)
+h = sns.clustermap(topPeaksDF,z_score=0,cmap=sns.diverging_palette(220, 20, n=7),figsize=(10, 20)); 
+h.ax_heatmap.set_xticklabels(h.ax_heatmap.get_xmajorticklabels(), fontsize = 10)
+# plt.show()
+heatmapPlotPdf = "{0}_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
+# Generate the sample correlation heatmap from top 1% varied peaks
+# sns.set(font_scale=0.5)
+h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
+# plt.show()
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
+
+
+
+# Generate PCA ohne 004_* samples
+# Remove all columns containing the string 004_
+originalPeaksDF=peaksDF.copy()
+peaksDF = peaksDF.loc[:,~peaksDF.columns.str.contains('004_', case=False)] 
+# peaksDF.shape =  (159990, 17)
+
+# Follow the same code from above to generate the ohneOutliers plots
+# Make sure to change the file names
 
 
 
