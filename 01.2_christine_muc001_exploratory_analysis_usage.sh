@@ -42,6 +42,13 @@ peaksDF.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.
 # Cltr+D+D
 #****************************************************************************************************
 
+
+############# DOCS #############
+# From the pca, it seems
+# PC1 = Morphology i.e. (c2a, c2b and c2c)
+# PC2 = Library Size which is suppose to be organs
+# PC3 = Mouse
+################################
 # Get the top 1% most varying genes and plot the pca
 ipython
 #****************************************************************************************************
@@ -58,6 +65,9 @@ rankoutput_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/anal
 
 # Import data into the dataframe
 peaksDF    = pd.read_csv(input_file, sep="\t", index_col=0)
+
+# Get the total sum for each peak
+librarySizeDF = peaksDF.sum(axis=0)
 
 # Get the variance for each peak
 peaksDF['variance'] = peaksDF.var(axis=1)
@@ -88,14 +98,19 @@ x = StandardScaler().fit_transform(x)
 # PCA Projection to 2D
 pca   = PCA(n_components=5)
 pcs   = pca.fit_transform(x)
-pcaDF = pd.DataFrame(data = pcs[:,0:2], columns = ['PC1', 'PC2'])
+pcaDF = pd.DataFrame(data = pcs, columns = ['PC1', 'PC2','PC3', 'PC4','PC5'])
+
 
 # Add the cellLines information
 pcaDF = pd.concat([pcaDF, pd.DataFrame(data=features, columns=['CellLines'])], axis = 1)
 
 # Add groups information
 # https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
-pcaDF['groups'] = pcaDF["CellLines"].str.split("_", n = 1, expand = True)[0]
+pcaDF['groups'] = pcaDF["CellLines"].str.split("_", n = 1, expand = True)[0]                                          # 5320, 6075, ...
+pcaDF['organs'] = pcaDF["CellLines"].str.split("_", n = 2, expand = True)[1].str.split("-", n = 1, expand = True)[0]  # livmet, lungmet, ppt, ...
+pcaDF['groups'] = pcaDF['groups'].apply(np.int)
+mapdi ={5320:'m5320', 6075:'m6075', 53631:'m53631', 53646:'m53646'}
+pcaDF.replace({"groups": mapdi}, inplace=True)
 
 # Perform a Scree Plot of the Principal Components
 # A scree plot is like a bar chart showing the size of each of the principal components. 
@@ -140,6 +155,40 @@ pcaPlotPdf = "{0}_PCA_plot.pdf".format(get_file_info(input_file)[3])
 plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
 # plt.show()
 plt.close('all')
+
+pcaDF.set_index('CellLines', inplace=True)
+pcaDF = pd.concat([pcaDF,librarySizeDF], axis=1)
+pcaDF.rename(columns={0:'LibrarySize'}, inplace=True)
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1) 
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='organs', s=200, size='LibrarySize')
+box = g.axes.get_position() # get position of figure
+g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
+g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
+ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
+ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
+ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+pcaPlotPdf = "{0}_organs_PCA_plot.pdf".format(get_file_info(input_file)[3])
+# pcaPlotPdf = "{0}_PCA_plot_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
+# plt.show()
+plt.close('all')
+
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='groups')
+box = g.axes.get_position() # get position of figure
+g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
+g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
+ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
+ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
+ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+pcaPlotPdf = "{0}_groups_PCA_plot.pdf".format(get_file_info(input_file)[3])
+# pcaPlotPdf = "{0}_PCA_plot_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
+# plt.show()
+plt.close('all')
+
 
 # Generate the heatmap of top 1% varied peaks
 sns.set(font_scale=0.5)
