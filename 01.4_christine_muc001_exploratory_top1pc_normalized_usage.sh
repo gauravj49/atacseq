@@ -21,6 +21,16 @@ rankoutput_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/anal
 # Import data into the dataframe
 peaksDF    = pd.read_csv(input_file, sep="\t", index_col=0)
 
+# Generate PCA ohne 004_* samples
+# Remove all columns containing the string 004_
+originalPeaksDF=peaksDF.copy()
+peaksDF = peaksDF.loc[:,~peaksDF.columns.str.contains('004_', case=False)] 
+# peaksDF.shape =  (159990, 17)
+
+# Follow the same code from above to generate the ohneOutliers plots
+# Make sure to change the file names
+
+
 # Get the total sum for each peak
 librarySizeDF = peaksDF.sum(axis=0)
 
@@ -167,25 +177,15 @@ heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".for
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
-
-
-
-# Generate PCA ohne 004_* samples
-# Remove all columns containing the string 004_
-originalPeaksDF=peaksDF.copy()
-peaksDF = peaksDF.loc[:,~peaksDF.columns.str.contains('004_', case=False)] 
-# peaksDF.shape =  (159990, 17)
-
-# Follow the same code from above to generate the ohneOutliers plots
-# Make sure to change the file names
-
-
-
-
-
-
-
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='organs', s=200)
+# Generate PCA with 
+def label_point(x, y, val, ax):
+    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+    for i, point in a.iterrows():
+        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
+        
+fig = plt.figure(figsize=(20,15))
+ax = fig.add_subplot(1,1,1)
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='groups', s=200)
 box = g.axes.get_position() # get position of figure
 g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
 g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
@@ -194,12 +194,19 @@ ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fon
 ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
 ax=plt.gca()
 label_point(pcaDF.PC1, pcaDF.PC2, pcaDF.sno, ax) 
-plt.show()
+pcaPlotPdf = "{0}_annotated_groups_PCA_plot.pdf".format(get_file_info(input_file)[3])
+pcaPlotPdf = "{0}_annotated_groups_PCA_plot_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
+# plt.show()
+plt.close('all')
+
+# Save the cellLines information in a file
+pcaCellLinesFile = "{0}_annotated_groups_PCA.txt".format(get_file_info(input_file)[3])
+pcaDF[['sno','CellLines']].to_csv(pcaCellLinesFile, sep="\t", index=None)
 
 
 
-def label_point(x, y, val, ax):
-    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
-    for i, point in a.iterrows():
-        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
+
+
+
 
