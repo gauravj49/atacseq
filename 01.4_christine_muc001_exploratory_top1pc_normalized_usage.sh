@@ -53,7 +53,6 @@ x        = topPeaksDF.T
 # PCA Projection to 2D
 pca   = PCA(n_components=5)
 pcs   = pca.fit_transform(x)
-pcs   = pca.fit(x)
 pcaDF = pd.DataFrame(data = pcs, columns = ['PC1', 'PC2','PC3', 'PC4','PC5'])
 
 
@@ -71,7 +70,8 @@ pcaDF.set_index('CellLines', inplace=True)
 pcaDF = pd.concat([pcaDF,librarySizeDF], axis=1)
 pcaDF.rename(columns={0:'LibrarySize'}, inplace=True)
 pcaDF['CellLines'] = pcaDF.index
-
+pcaDF['sno'] = np.arange(len(pcaDF)) + 1
+n = pcaDF['sno'].tolist()
 
 # Perform a Scree Plot of the Principal Components
 # A scree plot is like a bar chart showing the size of each of the principal components. 
@@ -178,3 +178,28 @@ peaksDF = peaksDF.loc[:,~peaksDF.columns.str.contains('004_', case=False)]
 
 # Follow the same code from above to generate the ohneOutliers plots
 # Make sure to change the file names
+
+
+
+
+
+
+
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='organs', s=200)
+box = g.axes.get_position() # get position of figure
+g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
+g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
+ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
+ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
+ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+ax=plt.gca()
+label_point(pcaDF.PC1, pcaDF.PC2, pcaDF.sno, ax) 
+plt.show()
+
+
+
+def label_point(x, y, val, ax):
+    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+    for i, point in a.iterrows():
+        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
+
