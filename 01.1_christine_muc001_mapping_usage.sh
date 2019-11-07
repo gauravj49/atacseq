@@ -13,17 +13,18 @@ fastqdir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/demultiplexin
 outputDir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001"
 scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
 multiqcDir="${outputDir}/qc/multiqc"; mkdir -p ${multiqcDir}
+fastqcDir="${outputDir}/qc/fastqc"; mkdir -p ${fastqcDir}
+logsDir="${outputDir}/logs"; mkdir -p ${logsDir}
 
 bash scripts/01_map_singleendFastQ_bowtie2.sh ${fastqdir} ${outputDir} ${projName} ${species}
 cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
 
-# Run multiqc on trimmed files
-trimFastqcDir="${outputDir}/qc/fastqc/01_trimmed"
-multiqc -o ${multiqcDir} -n 01_trimmed_fastq_stats_${projName} ${trimFastqcDir}
+# Run multiqc on original files
+ls ${fastqdir}/*.gz | parallel --progress --eta -j 64 'fastqc -o ${fastqcDir}/00_original {}'
+multiqc -o ${multiqcDir} -n 01_original_fastq_stats_${projName} ${fastqcDir}/00_original
 
-# Run multiqc on trimming logs 
-trimmingLogsDir="${outputDir}/logs/trimmingLogs"
-multiqc -o ${multiqcDir} -n 02_trimming_stats_${projName} ${trimmingLogsDir}
+# Run multiqc on trimmed files
+multiqc -o ${multiqcDir} -n 02_trimmed_fastq_stats_${projName} ${fastqcDir}/01_trimmed ${logsDir}/trimmingLogs
 
 # Get mapping stats and run multiqc on mapping logs
 bamdir="${outputDir}/bams/trimmed"

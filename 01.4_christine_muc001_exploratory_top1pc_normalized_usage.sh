@@ -52,6 +52,11 @@ topPeaksDF.shape # (1600, 20)
 # Drop the variance pctRnak columns from the top ranked genes
 topPeaksDF.drop(columns=['variance','pctRank'], inplace=True)
 
+# Save the topPeaksDF
+# topPeaksFile = "{0}_top1pc_peaks_vstCounts.matrix".format(get_file_info(input_file)[3])
+topPeaksFile = "{0}_ohne_004_samples_top1pc_peaks_vstCounts.matrix".format(get_file_info(input_file)[3])
+topPeaksDF   = topPeaksDF.to_csv(topPeaksFile, header=True, index=True, sep="\t")
+
 # Principal component analysis
 features = topPeaksDF.columns.tolist()
 x        = topPeaksDF.T
@@ -169,10 +174,11 @@ plt.close('all')
 
 # Generate the sample correlation heatmap from top 1% varied peaks
 # sns.set(font_scale=0.5)
-h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
+# h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
+h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1, annot=True, annot_kws={"size": 5})
 # plt.show()
-heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
-heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_annotated.pdf".format(get_file_info(input_file)[3])
+# heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
@@ -204,62 +210,18 @@ pcaCellLinesFile = "{0}_annotated_groups_PCA.txt".format(get_file_info(input_fil
 pcaDF[['sno','CellLines']].to_csv(pcaCellLinesFile, sep="\t", index=None)
 
 
-# Extract clusters from the seaborn clustermap
-from collections import defaultdict
+# Extract clusters using pheatmap
+# Generate the heatmap of top 1% varied peaks
+R
+# install.packages(pheatmap)
+ 
+# load package
+library(pheatmap)
 
-from scipy.cluster.hierarchy import dendrogram, set_link_color_palette
-from fastcluster import linkage
-from matplotlib.colors import rgb2hex, colorConverter
-
-np.random.seed(2105)
-
-# set some prettier non-default colours.
-sns.set_palette('Set1', 10, 0.65)
-palette = sns.color_palette()
-set_link_color_palette(map(rgb2hex, palette))
-sns.set_style('white')
-
-class Clusters(dict):
-    def _repr_html_(self):
-        html = '<table style="border: 0;">'
-        for c in self:
-            hx = rgb2hex(colorConverter.to_rgb(c))
-            html += '<tr style="border: 0;">' \
-            '<td style="background-color: {0}; ' \
-                       'border: 0;">' \
-            '<code style="background-color: {0};">'.format(hx)
-            html += c + '</code></td>'
-            html += '<td style="border: 0"><code>' 
-            html += repr(self[c]) + '</code>'
-            html += '</td></tr>'
-
-        html += '</table>'
-
-        return html
+# Input and output files
+input_file     <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/normalized/5320_53631_53646_6075_merge_master_peaks_vstCounts_ohne_004_samples_top1pc_peaks_vstCounts.matrix"
+heatmapPlotPdf <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/normalized/5320_53631_53646_6075_merge_master_peaks_vstCounts_ohne_004_samples_top1pc_heatmap_mit_clusters.pdf"
+heatmapPlotPng <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/normalized/5320_53631_53646_6075_merge_master_peaks_vstCounts_ohne_004_samples_top1pc_heatmap_mit_clusters.png"
 
 
-def get_cluster_classes(den, label='ivl'):
-    cluster_idxs = defaultdict(list)
-    for c, pi in zip(den['color_list'], den['icoord']):
-        for leg in pi[1:3]:
-            i = (leg - 5.0) / 10.0
-            if abs(i - int(i)) < 1e-5:
-                cluster_idxs[c].append(int(i))
-
-    cluster_classes = Clusters()
-    for c, l in cluster_idxs.items():
-        i_l = [den[label][i] for i in l]
-        cluster_classes[c] = i_l
-
-    return cluster_classes
-
-
-link = linkage(topPeaksDF, metric='correlation', method='ward')
-
-den = dendrogram(link, labels=topPeaksDF.index, above_threshold_color='#AAAAAA')
-plt.xticks(rotation=90)
-no_spine = {'left': True, 'bottom': True, 'right': True, 'top': True}
-sns.despine(**no_spine);
-
-get_cluster_classes(den)
 
