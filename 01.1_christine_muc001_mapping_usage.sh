@@ -86,3 +86,39 @@ mkdir -p ${scriptsdir}
 for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
 cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
 
+
+# 3) Sabrin Bortoluzzi from AG Schmidt-Supprian 
+# 3.1) For the NK-Timecouse ATACseq samples
+species="mm10"
+user="sabrina"
+projName="nkTimecourse"
+projDir="/home/rad/media/rad/HDD1/atacseq/sabrina/nkTimecourse"
+fastqdir="${projDir}/fastq"
+mappingDir="${projDir}/mapping"
+scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
+multiqcDir="${projDir}/qc/multiqc"; 
+
+# Create relevant dirs
+mkdir -p ${mappingDir} ${scriptsdir} ${multiqcDir}
+
+# Perform mapping
+bash scripts/01_map_singleendFastQ_bowtie2.sh ${fastqdir} ${mappingDir} ${projName} ${species}
+cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
+# Get peaks and homer annotation
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+species="mm10"
+user="sabrina"
+projName="nkTimecourse"
+projDir="/home/rad/media/rad/HDD1/atacseq/sabrina/nkTimecourse"
+fastqdir="${projDir}/fastq"
+mappingDir="${projDir}/mapping"
+bamdir="${projDir}/mapping/bams/trimmed"
+peaksdir="${projDir}/peaks"
+scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
+mkdir -p ${scriptsdir} ${bam} ${peaksdir}
+for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
+cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
+# Run multiqc on mapped data and peaks
+multiqc -o ${multiqcDir} -n ${projName}_stats ${projDir}
