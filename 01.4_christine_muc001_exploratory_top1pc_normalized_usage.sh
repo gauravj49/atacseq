@@ -174,11 +174,15 @@ plt.close('all')
 
 # Generate the sample correlation heatmap from top 1% varied peaks
 # sns.set(font_scale=0.5)
-# h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
+h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
 h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1, annot=True, annot_kws={"size": 5})
-# plt.show()
 heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_annotated.pdf".format(get_file_info(input_file)[3])
-# heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap_annotated_ohne_004_samples.pdf".format(get_file_info(input_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 

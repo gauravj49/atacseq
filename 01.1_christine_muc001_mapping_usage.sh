@@ -48,7 +48,7 @@ cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*
 
 
 # 2) Anja Pfaus
-# 1.1) For T-ALL human cell lines
+# 2.1) For T-ALL human cell lines
 species="hg19"
 user="anja"
 projName="tALLcellLine_hg"
@@ -87,9 +87,28 @@ mkdir -p ${scriptsdir}
 for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
 cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
 
+# 2.2) For T-ALL mouse cell lines
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+species="mm10"
+user="sabrina"
+projName="nkTimecourse"
+projDir="/home/rad/media/rad/HDD1/atacseq/sabrina/nkTimecourse"
+fastqdir="${projDir}/fastq"
+mappingDir="${projDir}/mapping"
+scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
+multiqcDir="${projDir}/qc/multiqc"; 
+
+# Create relevant dirs
+mkdir -p ${mappingDir} ${scriptsdir} ${multiqcDir}
+
+# Perform mapping
+bash scripts/01_map_singleendFastQ_bowtie2.sh ${fastqdir} ${mappingDir} ${projName} ${species}
+cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
 
 # 3) Sabrin Bortoluzzi from AG Schmidt-Supprian 
 # 3.1) For the NK-Timecouse ATACseq samples
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
 species="mm10"
 user="sabrina"
 projName="nkTimecourse"

@@ -135,4 +135,13 @@ tb = getEnrichmentTables(job)
 names(tb)
 
 
+# Finding Enriched Motifs in Genomic Regions (findMotifsGenome.pl)
+inputDir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/homer/input/Top1pcATACpeaks_Homer"
+species="mm10"
+for f in ATAC001_heatmap_cluster1.bed  ATAC001_heatmap_cluster3.bed  ATAC001_heatmap_cluster5.bed  ATAC001_heatmap_cluster7.bed ATAC001_heatmap_cluster2.bed  ATAC001_heatmap_cluster4.bed  ATAC001_heatmap_cluster6.bed  ATAC001_heatmap_cluster8.bed;
+do
+    motifoutdir="/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/homer/output/motifs/$(basename ${f} .bed)"; mkdir -p ${motifoutdir}
+    echo "findMotifsGenome.pl ${inputDir}/${f} ${species} ${motifoutdir} -len 6,8,10 -p 8"
+    findMotifsGenome.pl ${inputDir}/${f} ${species} ${motifoutdir} -len 6,8,10 -p 8
+done;
 
