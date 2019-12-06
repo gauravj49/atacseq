@@ -67,6 +67,10 @@ plt.close('all')
 
 # Plot heatmap after removing TNF
 peaksOhneTNFDF = peaksDF.drop('TNF')
+sns.clustermap(peaksOhneTNFDF, z_score=1, cmap='RdBu_r', col_cluster=False)
+heatmapPlotPdf = "{0}_heatmap_rearranged_ohne_TNF.pdf".format(get_file_info(output_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
 
 
 ############# DOCS #############
