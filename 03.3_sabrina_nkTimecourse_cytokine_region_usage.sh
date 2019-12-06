@@ -23,53 +23,52 @@ do
  sort -k1,1 -k2n ${od}/${bname}_peaks.bed -o ${od}/${bname}_peaks.bed
 done
 
-# # 2.3) Get genomeInfo files
-# gd="$(dirname ${peakMatrix})/genomeInfo"; mkdir -p ${gd}
-# bamfile="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/mapping/bams/trimmed/GS244_12h_NKT_TAAGGC_atacseq_mm_se_rmdup.bam"
-# genomeinfo="${gd}/$(basename ${bamfile} .bam).genomeInfo"
-# samtools view -H ${bamfile}| perl -ne 'if(/^@SQ.*?SN:(\w+)\s+LN:(\d+)/){print $1,"\t",$2,"\n"}' | egrep -v 'Un|random|GL|JH|M|KQ|KZ' > ${genomeinfo}
-
-sort -k1,1 -k2n ${ib} -o ${ib}
-
-
-
-
-
-
-
-
-
-
-
-
 # 2.3) Get the mean score of atacseq peaks for the cytokine region
 pd="$(dirname ${peakMatrix})/cytokinePeaks"; mkdir -p ${pd}
 ib="/home/rad/users/gaurav/projects/seqAnalysis/atacseq/docs/Interleukine_list.bed"
+sort -k1,1 -k2n ${ib} -o ${ib}
 for bbed in ${od}/*.bed;
 do
  echo ${bbed}
- intersectBed -a ${ib} -b ${bbed} -c > ${pd}/$(basename ${bbed} .bed)_cytokine_peaks_count.bed
+ bedtools map -a ${ib} -b ${bbed} -c 4 -o mean > ${pd}/$(basename ${bbed} .bed)_cytokine_peaks_mean.bed
  # Add header to the file
- header="chr\tstart\tend\tname\t$(basename ${bbed} .bed)"
- sed -i "1i${header}" ${pd}/$(basename ${bbed} .bed)_cytokine_peaks_count.bed
+ header="chr\tstart\tend\tname\t$(basename ${bbed} _atacseq_mm_se_rmdup_peaks.bed)_mean"
+ sed -i "1i${header}" ${pd}/$(basename ${bbed} .bed)_cytokine_peaks_mean.bed
 done
 
+# Merge the individual mean peaks into a dataframe
 ipython
+
+# Read and merge into df
 pkDF = pd.concat([pd.read_csv(f, sep='\t').set_index(['chr', 'start', 'end', 'name']) for f in glob.glob('/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/cytokinePeaks/*.bed')],axis=1).reset_index()
 
-output_file = '/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_Interleukine_merge_peaks_counts.txt'
-pkDF.to_csv(output_file, sep='\t', index = False)
+# Save to 
+output_file = '/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_Interleukine_merge_peaks_mean.txt'
+pkDF.to_csv(output_file, sep='\t', index = False, float_format='%.2g')
+
+# Plot the heatmap
+peaksDF = pkDF.copy()
+peaksDF.drop(columns = ['chr','start','end'], inplace = True)
+peaksDF.set_index('name',inplace=True)
+sns.clustermap(peaksDF, z_score=1, cmap='RdBu_r')
+heatmapPlotPdf = "{0}_heatmap.pdf".format(get_file_info(output_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
+# Rearrange peaksDF columns
+new_columns_order = ['SB02_DP_CAGAGAGG_mean','SB01_DP_TAAGGCGA_mean','GS250_DP_CTCTCT_mean','GS251_DP_CAGAGA_mean','GS244_12h_NKT_TAAGGC_mean','GS245_12h_NKT_CGTACT_mean','GS394_24h_NKT_TAAGGCGA_mean','SB04_24h_NKT_CGAGGCTG_mean','GS395_24h_NKT_TAAGGCGA_mean','SB03_24h_NKT_CGAGGCTG_mean','SB06_36h_NKT_AAGAGGCA_mean','GS396_36h_NKT_CGTACTAG_mean','GS397_36h_NKT_CGTACTAG_mean','GS398_48h_NKT_AGGCAGAA_mean','SB09_48h_NKT_CGTACTAG_mean','SB10_48h_NKT_CGTACTAG_mean','SB13_60h_NKT_AGGCAGAA_mean','GS399_60h_NKT_TCCTGAGC_mean','SB12_60h_NKT_CGTACTAG_mean','GS400_71h_NKT_GGACTCCT_mean','SB17_72h_NKT_GTCGTGAT_mean','SB18_72h_NKT_CTCTCTAC_mean','SB16_72h_NKT_CTCTCTAC_mean','SB15_72h_NKT_TCCTGAGC_mean','GS401_84h_NKT_TCCTGAGC_mean','SB21_84h_NKT_GGACTCCT_mean','SB22_96h_NKT_TAGGCATG_mean','GS402_96h_NKT_TAGGCATG_mean','GS247_5d_NKT_TCCTGA_mean','GS246_5d_NKT_AGGCAG_mean','GS403_NKT1_CTCTCTAC_mean','GS248_NKT1_GGACTC_mean','GS249_NKT1_TAGGCA_mean']
+
+# Rearrange columns to new order
+peaksDF = peaksDF[new_columns_order]
+sns.clustermap(peaksDF, z_score=1, cmap='RdBu_r', col_cluster=False)
+heatmapPlotPdf = "{0}_heatmap_rearranged.pdf".format(get_file_info(output_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
+# Plot heatmap after removing TNF
+peaksOhneTNFDF = peaksDF.drop('TNF')
 
 
-
-
-touch $(dirname ${peakMatrix})/$(basename ${peakMatrix} .tab)_cytokine_peaks_count.txt
-for bbed in ${pd}/*.bed;
-do
- sampleName="$(basename ${bbed} _cytokine_peaks_count.bed)"
- cat ${sampleName} >
- cut -f5 ${}
- 
 ############# DOCS #############
 ################################
 # Get the top 1% most varying genes and plot the pca
