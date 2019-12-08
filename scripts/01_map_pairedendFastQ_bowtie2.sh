@@ -21,12 +21,22 @@ trimmedFastDir="${outDir}/tempLocal/trimmed_fastq"
 # Create required dirs
 mkdir -p ${scriptsdir} ${bamDir} ${mappingLogsDir} ${trimmedFastDir} ${origFastqcDir} ${trimFastqcDir}
 
-for f in ${fastqdir}/*_1.fastq.gz
+# Expected naming convention: ExperimentInfo_Species_SeqProtocol_SeqType_Read
+# 1) Experiment info: ExperimentName-CellLine-SpecialCondition-ReplicateNumber
+# 2) Species: Human, mouse, etc.
+# 3) SeqProtocol: Rnaseq, ChIPseq etc.
+# 4) SeqType: paired end or single end
+# 5) Read: R1 for side 1 and R2 for side 2
+# Example: 
+#   - TransPB-CD4-CD4PosTcells-Rep3_mm_atacseq_se_R1.fastq.gz
+#   - TransPB-CD4-GSM2056292-Rep1_mm_atacseq_pe_R1.fastq.gz and TransPB-CD4-GSM2056292-Rep1_mm_atacseq_pe_R2.fastq.gz
+
+for f in ${fastqdir}/*_R1.fastq.gz
 do 
  # Get basename name
  bname=$(basename "${f}" .fastq.gz)
  fq1=${f}
- fq2=${fq1/_1/_2}
+ fq2=${fq1/_R1/_R2}
  scriptFile="${scriptsdir}/${bname}.sh"
  bamfile="${bamDir}/${bname}.bam"
  rmdupbamfile="${bamDir}/${bname}_rmdup.bam"
