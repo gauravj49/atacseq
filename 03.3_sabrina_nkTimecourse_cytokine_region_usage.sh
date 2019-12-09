@@ -58,37 +58,14 @@ plt.close('all')
 # Rearrange peaksDF columns
 new_columns_order = ['SB02_DP_CAGAGAGG_mean','SB01_DP_TAAGGCGA_mean','GS250_DP_CTCTCT_mean','GS251_DP_CAGAGA_mean','GS244_12h_NKT_TAAGGC_mean','GS245_12h_NKT_CGTACT_mean','GS394_24h_NKT_TAAGGCGA_mean','SB04_24h_NKT_CGAGGCTG_mean','GS395_24h_NKT_TAAGGCGA_mean','SB03_24h_NKT_CGAGGCTG_mean','SB06_36h_NKT_AAGAGGCA_mean','GS396_36h_NKT_CGTACTAG_mean','GS397_36h_NKT_CGTACTAG_mean','GS398_48h_NKT_AGGCAGAA_mean','SB09_48h_NKT_CGTACTAG_mean','SB10_48h_NKT_CGTACTAG_mean','SB13_60h_NKT_AGGCAGAA_mean','GS399_60h_NKT_TCCTGAGC_mean','SB12_60h_NKT_CGTACTAG_mean','GS400_71h_NKT_GGACTCCT_mean','SB17_72h_NKT_GTCGTGAT_mean','SB18_72h_NKT_CTCTCTAC_mean','SB16_72h_NKT_CTCTCTAC_mean','SB15_72h_NKT_TCCTGAGC_mean','GS401_84h_NKT_TCCTGAGC_mean','SB21_84h_NKT_GGACTCCT_mean','SB22_96h_NKT_TAGGCATG_mean','GS402_96h_NKT_TAGGCATG_mean','GS247_5d_NKT_TCCTGA_mean','GS246_5d_NKT_AGGCAG_mean','GS403_NKT1_CTCTCTAC_mean','GS248_NKT1_GGACTC_mean','GS249_NKT1_TAGGCA_mean']
 
-groups = ['DP','DP','DP','DP','12h','12h','24h','24h','24h','24h','36h','36h','36h','48h','48h','48h','60h','60h','60h','71h','72h','72h','72h','72h','84h','84h','96h','96h','5d','5d','NKT1','NKT1','NKT1']
+# NOTE: here the sample (GS400_71h_*) belongs to 72h group so using that in the groups annotation below
+groups = ['DP','DP','DP','DP','12h','12h','24h','24h','24h','24h','36h','36h','36h','48h','48h','48h','60h','60h','60h','72h','72h','72h','72h','72h','84h','84h','96h','96h','120h','120h','NKT1','NKT1','NKT1']
 
 # Rearrange columns to new order
 peaksDF = peaksDF[new_columns_order]
 
 # Add groups to the peaksDF
 peaksDF.loc['groups'] = groups
-
-# Get the meanPeaksDF for each group
-meanPeaksDF = pd.DataFrame()
-peaksGroups = peaksDF.T.groupby('groups')
-
-for groupName, groupDF in peaksGroups:
-        groupDF.drop('groups', inplace=True, axis=1)
-        meanPeaksDF = pd.concat([meanPeaksDF, pd.DataFrame(groupDF.mean(axis=1), columns=['mean_{0}'.format(groupName)])], axis=1)
-
-
-for f in sample_files.split(","):
-samples_list  = [robj.sub(lambda m: rdict[m.group(0)], line.strip()) for line in open(f  , 'r')]
-sample_df     = alldatadf[samples_list]
-filtered_sample_df = get_filtered_data(sample_df.T, read_cutoff)
-total_filtered_features.extend(filtered_sample_df.index.tolist())
-print "\n- Samples for {0}:".format(get_file_info(f)[1])
-print "\t- Unfiltered: {1} samples, {0} features".format(sample_df.shape[0], sample_df.shape[1])
-print "\t- filtered  : {1} samples, {0} features".format(filtered_sample_df.shape[0], filtered_sample_df.shape[1])
-
-# Get the mean DF
-mean_df = pd.concat([mean_df, pd.DataFrame(filtered_sample_df.mean(axis=1), columns=['mean_{0}'.format(get_file_info(f)[1])])], axis=1)
-
-mean_df.index.name = 'featureid'
-
 
 # Plot the dataframe as heatmap
 sns.clustermap(peaksDF, z_score=1, cmap='RdBu_r', col_cluster=False)
@@ -110,6 +87,62 @@ heatmapPlotPdf = "{0}_heatmap_rearranged_ohne_TNF_Tgfb1.pdf".format(get_file_inf
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
+# Get the meanPeaksDF for each group
+meanPeaksDF = pd.DataFrame()
+peaksGroups = peaksDF.T.groupby('groups')
+
+for groupName, groupDF in peaksGroups:
+        groupDF.drop('groups', inplace=True, axis=1)
+        meanPeaksDF = pd.concat([meanPeaksDF, pd.DataFrame(groupDF.mean(axis=0), columns=['mean_{0}'.format(groupName)])], axis=1)
+
+# Rename the index
+meanPeaksDF.index.name = 'featureid'
+
+# Rearrange columns to new order
+mean_col_order = ['mean_DP','mean_12h','mean_24h','mean_36h','mean_48h','mean_60h','mean_72h','mean_84h','mean_96h','mean_120h','mean_NKT1']
+meanPeaksDF    = meanPeaksDF[mean_col_order]
+
+# Plot two heatmaps on the basis of overall means of transcription factors
+# In [24]: peaksDF.drop('groups', axis=0).mean(axis=1).sort_values()                                                                                            
+# name
+# Il7        3.240490
+# Il17a      3.560606
+# Il5        3.975758
+# IL6        4.161616
+# Il25       4.636364
+# Il2        4.774892
+# Il10       4.949495
+# Il21       5.318182
+# Il22       5.479798
+# Il23a      6.121212
+# Il4        7.193182
+# Ifng       8.186869
+# Ztbt16     9.187328
+
+# Il13      10.189394
+# Tgfb1     13.063973
+# RORc      14.350816
+# TNF       21.151515
+
+# Get the two dataframes for low and high values to plot in separate heatmaps
+lowPeaksDF      = peaksDF.drop(['Tgfb1','RORc','TNF','groups']).astype('float')
+highPeaksDF     = peaksDF.loc [['Tgfb1','RORc','TNF']].astype('float')
+meanLowPeaksDF  = meanPeaksDF.drop(['Tgfb1','RORc','TNF']).astype('float')
+meanHighPeaksDF = meanPeaksDF.loc [['Tgfb1','RORc','TNF']].astype('float')
+
+# Plot heatmap for low values
+g = sns.clustermap(lowPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(20,8)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+heatmapPlotPdf = "{0}_low_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
+
+g = sns.clustermap(highPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(15,2)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+heatmapPlotPdf = "{0}_high_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
+
+g = sns.clustermap(meanLowPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(10,10)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+heatmapPlotPdf = "{0}_mean_low_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
+
+g = sns.clustermap(meanHighPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(10,3)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+heatmapPlotPdf = "{0}_mean_high_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
+
 
 #########################################
 # Save session
@@ -121,178 +154,41 @@ dill.dump_session(filename)
 import dill
 filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
 dill.load_session(filename)
-
 #########################################
 
-
-############# DOCS #############
-################################
-# Get the top 1% most varying genes and plot the pca
-ipython
-#****************************************************************************************************
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-
-pd.set_option('display.max_rows', 20)
-pd.set_option('display.max_columns', 8)
-pd.set_option('display.width', 1000)
-
-# Input and output files
-input_file = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.matrix"
-rankoutput_file = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.ranks"
-
-# Import data into the dataframe
-peaksDF    = pd.read_csv(input_file, sep="\t", index_col=0)
-
-# Get the total sum for each peak
-librarySizeDF = peaksDF.sum(axis=0)
-
-# Get the variance for each peak
-peaksDF['variance'] = peaksDF.var(axis=1)
-
-# Rank the variance (expressed as percentile rank)
-peaksDF['pctRank']  = peaksDF['variance'].rank(pct=True)
-
-# Save the variance and ranks genes
-peaksDF[['variance','pctRank']].to_csv(rankoutput_file, index=True, header=True, sep="\t", float_format='%.2f')
-
-# Get the filtered dataframe by taking top 1% of ranked peaks
-topPeaksDF = peaksDF[peaksDF['pctRank'] >= 0.99]
-
-# Get the dimensions of original and top peaks df
-peaksDF.shape    # peaksDF.shape
-topPeaksDF.shape # (1600, 20)
-
-# Drop the variance pctRnak columns from the top ranked genes
-topPeaksDF.drop(columns=['variance','pctRank'], inplace=True)
-
-# Principal component analysis
-features = topPeaksDF.columns.tolist()
-x        = topPeaksDF.T
-# Standardize the Data: Since PCA yields a feature subspace that maximizes the variance along the axes, 
-# it makes sense to standardize the data, especially, if it was measured on different scales. 
-# x = StandardScaler().fit_transform(x)
-
-# PCA Projection to 2D
-pca   = PCA(n_components=5)
-pcs   = pca.fit_transform(x)
-pcaDF = pd.DataFrame(data = pcs, columns = ['PC1', 'PC2','PC3', 'PC4','PC5'])
-
-
-# Add the cellLines information
-pcaDF = pd.concat([pcaDF, pd.DataFrame(data=features, columns=['CellLines'])], axis = 1)
-
-# Add groups information
-# https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
-pcaDF['timeline'] = pcaDF["CellLines"].str.split("_", n = 2, expand = True)[1] # DP, 12h, 24h, 36h, 48h, 60h, 72h, 84h, 96h, 120h, NKT1
-pcaDF.set_index('CellLines', inplace=True)
-pcaDF = pd.concat([pcaDF,librarySizeDF], axis=1)
-pcaDF.rename(columns={0:'LibrarySize'}, inplace=True)
-pcaDF['CellLines'] = pcaDF.index
-pcaDF['sno'] = np.arange(len(pcaDF)) + 1
-n = pcaDF['sno'].tolist()
-
-# Perform a Scree Plot of the Principal Components
-# A scree plot is like a bar chart showing the size of each of the principal components. 
-# It helps us to visualize the percentage of variation captured by each of the principal components
-percent_variance = np.round(pca.explained_variance_ratio_* 100, decimals =2)
-columns = ['PC1', 'PC2', 'PC3', 'PC4', 'PC5']
-screeDF = pd.DataFrame(percent_variance, index=['PC1', 'PC2', 'PC3', 'PC4', 'PC5'])
-screeDF.reset_index(inplace=True)
-screeDF.rename(columns={ screeDF.columns[1]: "variance" }, inplace = True)
-sns_t = sns.barplot(x='variance',y='index', data=screeDF, palette="Blues_d", orient='h')
-show_values_on_bars(sns_t, "h", 0.3)
-plt.xlabel('Percentate of Variance Explained')
-plt.ylabel('Principal Components')
-plt.title('PCA Scree Plot')
-# Hide the right and top spines
-sns.despine(top=True, right=True, left=False, bottom=False)
-# or
-ax=plt.gca()
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-# Only show ticks on the left and bottom spines
-ax.yaxis.set_ticks_position('left')
-ax.xaxis.set_ticks_position('bottom')
-# plt.show()
-screePlotPdf = "{0}_PCA_Scree_plot.pdf".format(get_file_info(input_file)[3])
-plt.savefig(screePlotPdf,bbox_inches = 'tight')
-plt.close('all')
-
-# Visualize 2D Projection
-filled_markers = ('o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X')
-fig = plt.figure()
-ax = fig.add_subplot(1,1,1) 
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', style='timeline', size='CellLines', markers=filled_markers)
-box = g.axes.get_position() # get position of figure
-g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
-g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
-ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
-ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
-pcaPlotPdf = "{0}_PCA_plot.pdf".format(get_file_info(input_file)[3])
-plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
-# plt.show()
-plt.close('all')
-
-fig = plt.figure()
-ax = fig.add_subplot(1,1,1) 
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=200, size='LibrarySize')
-box = g.axes.get_position() # get position of figure
-g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
-g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
-ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
-ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
-pcaPlotPdf = "{0}_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
-plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
-# plt.show()
-plt.close('all')
-
-# Generate the heatmap of top 1% varied peaks
-sns.set(font_scale=0.5)
-h = sns.clustermap(topPeaksDF,z_score=0,cmap=sns.diverging_palette(220, 20, n=7),figsize=(10, 20)); 
-h.ax_heatmap.set_xticklabels(h.ax_heatmap.get_xmajorticklabels(), fontsize = 10)
-# plt.show()
-heatmapPlotPdf = "{0}_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
-plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
-plt.close('all')
-
-# Generate the sample correlation heatmap from top 1% varied peaks
-# sns.set(font_scale=0.5)
-h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
-# plt.show()
-heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
-plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
-plt.close('all')
-
-# Generate PCA with 
-def label_point(x, y, val, ax):
-    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
-    for i, point in a.iterrows():
-        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
-        
-fig = plt.figure(figsize=(20,15))
-ax = fig.add_subplot(1,1,1)
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=200)
-box = g.axes.get_position() # get position of figure
-g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
-g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
-ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
-ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
-ax=plt.gca()
-label_point(pcaDF.PC1, pcaDF.PC2, pcaDF.sno, ax) 
-pcaPlotPdf = "{0}_annotated_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
-plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
-# plt.show()
-plt.close('all')
-
-# Save the cellLines information in a file
-pcaCellLinesFile = "{0}_annotated_groups_PCA.txt".format(get_file_info(input_file)[3])
-pcaDF[['sno','CellLines']].to_csv(pcaCellLinesFile, sep="\t", index=None)
-
 ####################### USER DEFINIED FUNCTIONS ###########################
+def fixedWidthClusterMap(dataFrame, cellSizePixels=75):
+        '''
+        Make multiple plots where the cell sizes are exactly identical
+        '''
+
+        # Calulate the figure size, this gets us close, but not quite to the right place
+        dpi = matplotlib.rcParams['figure.dpi']
+        marginWidth = matplotlib.rcParams['figure.subplot.right']-matplotlib.rcParams['figure.subplot.left']
+        marginHeight = matplotlib.rcParams['figure.subplot.top']-matplotlib.rcParams['figure.subplot.bottom']
+        Ny,Nx = dataFrame.shape
+        figWidth = (Nx*cellSizePixels/dpi)/0.8/marginWidth
+        figHeigh = (Ny*cellSizePixels/dpi)/0.8/marginHeight
+
+        # # do the actual plot
+        # grid = sns.clustermap(dataFrame, figsize=(figWidth, figHeigh))
+        grid = sns.clustermap(dataFrame, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7);
+
+        # calculate the size of the heatmap axes
+        axWidth = (Nx*cellSizePixels)/(figWidth*dpi)
+        axHeight = (Ny*cellSizePixels)/(figHeigh*dpi)
+
+        # resize heatmap
+        ax_heatmap_orig_pos = grid.ax_heatmap.get_position()
+        grid.ax_heatmap.set_position([ax_heatmap_orig_pos.x0, ax_heatmap_orig_pos.y0, axWidth, axHeight])
+
+        # resize dendrograms to match
+        ax_row_orig_pos = grid.ax_row_dendrogram.get_position()
+        grid.ax_row_dendrogram.set_position([ax_row_orig_pos.x0, ax_row_orig_pos.y0, ax_row_orig_pos.width, axHeight])
+        ax_col_orig_pos = grid.ax_col_dendrogram.get_position()
+        grid.ax_col_dendrogram.set_position([ax_col_orig_pos.x0, ax_heatmap_orig_pos.y0+axHeight, axWidth, ax_col_orig_pos.height])
+        return grid # return ClusterGrid object
+
 def show_values_on_bars(axs, h_v="v", space=0.4):
         '''https://stackoverflow.com/questions/43214978/seaborn-barplot-displaying-values'''
         def _show_on_single_plot(ax):
@@ -314,7 +210,4 @@ def show_values_on_bars(axs, h_v="v", space=0.4):
                                 _show_on_single_plot(ax)
                 else:
                         _show_on_single_plot(axs)
-
-
-
 
