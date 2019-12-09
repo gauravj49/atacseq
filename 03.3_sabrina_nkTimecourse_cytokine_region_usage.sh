@@ -7,8 +7,8 @@ multiBamSummary BED-file --BED /media/rad/HDD1/atacseq/sabrina/nkTimecourse/anal
 
 # 2) Get the peaks in the cytokine region
 peakMatrix="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rawCounts.tab"
-# 2.1) Remove single quotes from the header
-sed -i "s/'//g" ${peakMatrix}
+# # 2.1) Remove single quotes from the header
+# sed -i "s/'//g" ${peakMatrix}
 
 # 2.2) Get bed files for each sample
 od="$(dirname ${peakMatrix})/samplesBed"
@@ -58,19 +58,71 @@ plt.close('all')
 # Rearrange peaksDF columns
 new_columns_order = ['SB02_DP_CAGAGAGG_mean','SB01_DP_TAAGGCGA_mean','GS250_DP_CTCTCT_mean','GS251_DP_CAGAGA_mean','GS244_12h_NKT_TAAGGC_mean','GS245_12h_NKT_CGTACT_mean','GS394_24h_NKT_TAAGGCGA_mean','SB04_24h_NKT_CGAGGCTG_mean','GS395_24h_NKT_TAAGGCGA_mean','SB03_24h_NKT_CGAGGCTG_mean','SB06_36h_NKT_AAGAGGCA_mean','GS396_36h_NKT_CGTACTAG_mean','GS397_36h_NKT_CGTACTAG_mean','GS398_48h_NKT_AGGCAGAA_mean','SB09_48h_NKT_CGTACTAG_mean','SB10_48h_NKT_CGTACTAG_mean','SB13_60h_NKT_AGGCAGAA_mean','GS399_60h_NKT_TCCTGAGC_mean','SB12_60h_NKT_CGTACTAG_mean','GS400_71h_NKT_GGACTCCT_mean','SB17_72h_NKT_GTCGTGAT_mean','SB18_72h_NKT_CTCTCTAC_mean','SB16_72h_NKT_CTCTCTAC_mean','SB15_72h_NKT_TCCTGAGC_mean','GS401_84h_NKT_TCCTGAGC_mean','SB21_84h_NKT_GGACTCCT_mean','SB22_96h_NKT_TAGGCATG_mean','GS402_96h_NKT_TAGGCATG_mean','GS247_5d_NKT_TCCTGA_mean','GS246_5d_NKT_AGGCAG_mean','GS403_NKT1_CTCTCTAC_mean','GS248_NKT1_GGACTC_mean','GS249_NKT1_TAGGCA_mean']
 
+groups = ['DP','DP','DP','DP','12h','12h','24h','24h','24h','24h','36h','36h','36h','48h','48h','48h','60h','60h','60h','71h','72h','72h','72h','72h','84h','84h','96h','96h','5d','5d','NKT1','NKT1','NKT1']
+
 # Rearrange columns to new order
 peaksDF = peaksDF[new_columns_order]
+
+# Add groups to the peaksDF
+peaksDF.loc['groups'] = groups
+
+# Get the meanPeaksDF for each group
+meanPeaksDF = pd.DataFrame()
+peaksGroups = peaksDF.T.groupby('groups')
+
+for groupName, groupDF in peaksGroups:
+        groupDF.drop('groups', inplace=True, axis=1)
+        meanPeaksDF = pd.concat([meanPeaksDF, pd.DataFrame(groupDF.mean(axis=1), columns=['mean_{0}'.format(groupName)])], axis=1)
+
+
+for f in sample_files.split(","):
+samples_list  = [robj.sub(lambda m: rdict[m.group(0)], line.strip()) for line in open(f  , 'r')]
+sample_df     = alldatadf[samples_list]
+filtered_sample_df = get_filtered_data(sample_df.T, read_cutoff)
+total_filtered_features.extend(filtered_sample_df.index.tolist())
+print "\n- Samples for {0}:".format(get_file_info(f)[1])
+print "\t- Unfiltered: {1} samples, {0} features".format(sample_df.shape[0], sample_df.shape[1])
+print "\t- filtered  : {1} samples, {0} features".format(filtered_sample_df.shape[0], filtered_sample_df.shape[1])
+
+# Get the mean DF
+mean_df = pd.concat([mean_df, pd.DataFrame(filtered_sample_df.mean(axis=1), columns=['mean_{0}'.format(get_file_info(f)[1])])], axis=1)
+
+mean_df.index.name = 'featureid'
+
+
+# Plot the dataframe as heatmap
 sns.clustermap(peaksDF, z_score=1, cmap='RdBu_r', col_cluster=False)
 heatmapPlotPdf = "{0}_heatmap_rearranged.pdf".format(get_file_info(output_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
-# Plot heatmap after removing TNF
+# Plot heatmap ohne TNF
 peaksOhneTNFDF = peaksDF.drop('TNF')
 sns.clustermap(peaksOhneTNFDF, z_score=1, cmap='RdBu_r', col_cluster=False)
 heatmapPlotPdf = "{0}_heatmap_rearranged_ohne_TNF.pdf".format(get_file_info(output_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
+
+# Plot heatmap ohne TNF and Tgfb1
+peaksOhneTNFTgfb1DF = peaksDF.drop(['TNF', 'Tgfb1'])
+sns.clustermap(peaksOhneTNFTgfb1DF, z_score=1, cmap='RdBu_r', col_cluster=False)
+heatmapPlotPdf = "{0}_heatmap_rearranged_ohne_TNF_Tgfb1.pdf".format(get_file_info(output_file)[3])
+plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
+plt.close('all')
+
+
+#########################################
+# Save session
+import dill
+filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
+dill.dump_session(filename)
+
+# and to load the session again:
+import dill
+filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
+dill.load_session(filename)
+
+#########################################
 
 
 ############# DOCS #############
