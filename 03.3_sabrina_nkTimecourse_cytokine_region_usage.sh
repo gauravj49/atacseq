@@ -38,6 +38,7 @@ done
 
 # Merge the individual mean peaks into a dataframe
 ipython
+from scipy.stats import zscore
 
 # Read and merge into df
 pkDF = pd.concat([pd.read_csv(f, sep='\t').set_index(['chr', 'start', 'end', 'name']) for f in glob.glob('/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/cytokinePeaks/*.bed')],axis=1).reset_index()
@@ -102,47 +103,26 @@ meanPeaksDF.index.name = 'featureid'
 mean_col_order = ['mean_DP','mean_12h','mean_24h','mean_36h','mean_48h','mean_60h','mean_72h','mean_84h','mean_96h','mean_120h','mean_NKT1']
 meanPeaksDF    = meanPeaksDF[mean_col_order]
 
-# Plot two heatmaps on the basis of overall means of transcription factors
-# In [24]: peaksDF.drop('groups', axis=0).mean(axis=1).sort_values()                                                                                            
-# name
-# Il7        3.240490
-# Il17a      3.560606
-# Il5        3.975758
-# IL6        4.161616
-# Il25       4.636364
-# Il2        4.774892
-# Il10       4.949495
-# Il21       5.318182
-# Il22       5.479798
-# Il23a      6.121212
-# Il4        7.193182
-# Ifng       8.186869
-# Ztbt16     9.187328
+# Calculate the zscore of the dataframe
+# The peaksDF.apply(zscore, axis=1) returns an array 
+# https://stackoverflow.com/questions/35491274/pandas-split-column-of-lists-into-multiple-columns
+from scipy.stats import zscore
+zscorePeaksDF     = pd.DataFrame(pd.DataFrame(peaksDF.apply(zscore, axis=1))[0].values.tolist(), columns=peaksDF.columns.tolist(), index=peaksDF.index)
+zscoreMeanPeaksDF = pd.DataFrame(pd.DataFrame(meanPeaksDF.apply(zscore, axis=1))[0].values.tolist(), columns=meanPeaksDF.columns.tolist(), index=meanPeaksDF.index)
 
-# Il13      10.189394
-# Tgfb1     13.063973
-# RORc      14.350816
-# TNF       21.151515
+# Plot the heatmap for all replicates separately for all time points
+g = sns.clustermap(zscorePeaksDF, cmap='RdBu_r', col_cluster=False, vmin=-2.0, vmax=2.0, figsize=(10,8)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
+heatmapPlotPdf = "{0}_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
 
-# Get the two dataframes for low and high values to plot in separate heatmaps
-lowPeaksDF      = peaksDF.drop(['Tgfb1','RORc','TNF','groups']).astype('float')
-highPeaksDF     = peaksDF.loc [['Tgfb1','RORc','TNF']].astype('float')
-meanLowPeaksDF  = meanPeaksDF.drop(['Tgfb1','RORc','TNF']).astype('float')
-meanHighPeaksDF = meanPeaksDF.loc [['Tgfb1','RORc','TNF']].astype('float')
+# Plot the heatmap for mean of replicates for all time points
+g = sns.clustermap(zscoreMeanPeaksDF, cmap='RdBu_r', col_cluster=False, vmin=-2.0, vmax=2.0, figsize=(10,8)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
+heatmapPlotPdf = "{0}_of_replicates_for_timepoints_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
 
-# Plot heatmap for low values
-g = sns.clustermap(lowPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(20,8)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
-heatmapPlotPdf = "{0}_low_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
-
-g = sns.clustermap(highPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(15,2)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
-heatmapPlotPdf = "{0}_high_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
-
-g = sns.clustermap(meanLowPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(10,10)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
-heatmapPlotPdf = "{0}_mean_low_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
-
-g = sns.clustermap(meanHighPeaksDF, z_score=1, cmap='RdBu_r', col_cluster=False, vmin=-1.7, vmax=1.7, figsize=(10,3)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
-heatmapPlotPdf = "{0}_mean_high_value_peaks_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
-
+# Save the meanPeaksDf
+meanPeaksDF['meanFeatureid'] = meanPeaksDF.mean(axis=1)
+meanPeaksDF.sort_values(inplace=True, by='meanFeatureid')
+output_file = '/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_Interleukine_merge_peaks_mean_of_replicates_for_timepoints.txt'
+meanPeaksDF.to_csv(output_file, sep='\t', index = True, float_format='%.2g')
 
 #########################################
 # Save session

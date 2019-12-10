@@ -88,28 +88,72 @@ peaksDF.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.
 #****************************************************************************************************
 
 # Normalization
+# # Theory:
+# "The rlog transformation is calculated by fitting for each gene a GLM with a baseline expression (i.e., intercept only) and, computing for each sample, shrunken LFCs with respect to the baseline, using the same empirical Bayes procedure as before (Materials and methods)." 
+# https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0550-8. So instead of using the design, the rlog creates a matrix with an intercept and a coefficient for each sample. See Methods of DESeq2 paper for more details.
+
+# Whereas the VST is conceptually different. It looks at the trend between variance and mean in the data, and then tries to find a strictly monotonous transformation of the data so that this trend is removed. In practice, the transformation will approach the logarithm function for high values and the square root function for small values (incl. 0), and smoothly interpolate inbetween.
+
+# Source: https://support.bioconductor.org/p/104615/
+
 R
 suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("data.table", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("splitstackshape", warn.conflicts=FALSE, quietly=TRUE))
 
 inputFile  <- "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rawCounts.matrix"
-outputFile <- "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.matrix"
 
 # Import data from featureCounts
 countdata <- read.table(inputFile, header=TRUE, row.names=1, check.names = FALSE)
-coldata   <- data.frame(row.names=colnames(countdata), samples=colnames(countdata))
-dds       <- DESeqDataSetFromMatrix(countData=countdata, design=~1, colData=coldata)
 
+# Replace sample name from 71 to 72 as it belongs to 72h timepoint
+colnames(countdata) <- gsub('71','72', colnames(countdata))
+
+# Create the sampletable from the column names
+targetsDT <- data.table(colnames(countdata))
+SampleTable <- cSplit(targetsDT, 'V1','_', drop=F)
+
+# Create new column batch column
+# SampleTable$<-gsub('[0-9]+', '', SampleTable$V1_1)
+batches <- c(rep('1',8),rep('2',10),rep('3',15))
+SampleTable$batches <- batches
+
+# Rename V_2 column to timepoint
+names(SampleTable)[names(SampleTable) == "V1_2"] <- "timepoints"
+names(SampleTable)[names(SampleTable) == "V1"]   <- "sampleNames"
+
+# Drop useless columns
+SampleTable <- subset(SampleTable, select = -c(V1_1, V1_3, V1_4))
+
+# Get the dds object
+dds <- DESeqDataSetFromMatrix(colData  = SampleTable, countData=countdata, design = ~timepoints)
+
+# Transform data to log space and visualize samples
+rld <- rlogTransformation(dds, blind = TRUE)
+outputFile <- "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rlogCounts.matrix"
+
+
+
+# VST 
 vst         <- varianceStabilizingTransformation(dds, blind=TRUE)  
 vsd         <- assay(vst)
-
-# # Remove the minimum to get 0s and 0s again
-# vsdMin         <- min(vsd)
-# vsd            <- vsd - vsdMin
-
 # Convert rownames as feature column to save it in the csv file
 vsd           <- cbind(feature = rownames(vsd), vsd)
 rownames(vsd) <- 1:nrow(vsd)
-
 # Save the counts file to output csv file
+outputFile <- "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.matrix"
 write.table(vsd   , file = outputFile , row.names = F, sep = '\t', quote = F)
 
+
+# Source: https://f1000research.com/articles/5-1408
+# Law, C. W., Alhamdoosh, M., Su, S., Dong, X., Tian, L., Smyth, G. K., & Ritchie, M. E. (2016). RNA-seq analysis is easy as 1-2-3 with limma, Glimma and edgeR. F1000Research, 5.
+
+# The density of log-CPM values for raw pre-filtered data (A) and post-filtered data (B) are shown for each sample. Dotted vertical lines mark the log-CPM threshold (equivalent to a CPM value of about 0.2) used in the filtering step.
+par(mfrow=c(1,2))
+plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
+title(main="A. Raw data", xlab="Log-cpm")
+abline(v=lcpm.cutoff, lty=3)
+for (i in 2:nsamples){
+  den <- density(lcpm[,i])
+  lines(den$x, den$y, col=col[i], lwd=2)
+}
