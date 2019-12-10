@@ -71,7 +71,7 @@ species="mm10"
 user="anja"
 projName="tALLcellLineMm"
 fastqdir='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/fastq/pe'
-outputDir="/media/rad/SSD1/atac_temp/anja/tALLcellLineMm"
+outputDir="media/rad/HDD1/atacseq/anja/tALLcellLineMm"
 scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
 multiqcDir="${outputDir}/qc/multiqc"; mkdir -p ${multiqcDir}
 fastqcDir="${outputDir}/qc/fastqc"; mkdir -p ${fastqcDir}
@@ -79,3 +79,21 @@ logsDir="${outputDir}/logs"; mkdir -p ${logsDir}
 
 bash scripts/01_map_pairedendFastQ_bowtie2.sh ${fastqdir} ${outputDir} ${projName} ${species}
 cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
+# Get peaks and homer annotation
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+species="mm10"
+user="anja"
+projName="tALLcellLineMm"
+projDir="/media/rad/HDD1/atacseq/anja/tALLcellLineMm"
+fastqdir="${projDir}/fastq/pe"
+mappingDir="${projDir}/mapping"
+bamdir="${projDir}/bams/trimmed"
+peaksdir="${projDir}/peaks"
+scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
+mkdir -p ${scriptsdir} ${bam} ${peaksdir}
+for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
+cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
+# Run multiqc on mapped data and peaks
+multiqc -o ${multiqcDir} -n ${projName}_stats ${projDir}
