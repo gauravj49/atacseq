@@ -46,7 +46,7 @@ echo "" >> "${scriptFile}"
 
 # MACs Peak Calling
 echo "# Perform MACs peak calling" >> "${scriptFile}"
-echo "macs2 callpeak --name ${bname} --treatment ${trtBam} --outdir ${peaksoutdir} --format BAM --pvalue 1e-5 --gsize ${spc} --broad -q 0.05 --extsize 200 --nomodel --shift -100 --nolambda --keep-dup all 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
+echo "macs2 callpeak --name ${bname} --treatment ${trtBam} --outdir ${peaksoutdir} --format BAM --pvalue 1e-5 --gsize ${spc} --broad --extsize 200 --nomodel --shift -100 --nolambda --keep-dup all 2>&1 | tee -a ${logFile}" >> "${scriptFile}"
 echo "" >> "${scriptFile}"
 
 # Peak Annotation Using Homer
