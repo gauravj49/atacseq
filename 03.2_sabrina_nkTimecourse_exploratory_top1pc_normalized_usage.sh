@@ -63,6 +63,25 @@ topPeaksDF.shape # (1600, 20)
 # Drop the variance pctRnak columns from the top ranked genes
 topPeaksDF.drop(columns=['variance','pctRank'], inplace=True)
 
+# Save the topPeaks files in tab separated files
+# tabPeaksDF = topPeaksDF.copy()
+tabPeaksDF = peaksDF.copy()
+
+# Get the chr, start and end columns
+tabPeaksDF['tabDFSlice'] = tabPeaksDF.index.values.tolist()
+tabDFSlice               = tabPeaksDF['tabDFSlice'].str.split("_", n = 3, expand = True)
+tabPeaksDF['chr']        = tabDFSlice[0]
+tabPeaksDF['start']      = tabDFSlice[1]
+tabPeaksDF['end']        = tabDFSlice[2]
+
+# Rearrange columns to new order
+new_columns_order = ['chr', 'start', 'end', 'SB02_DP_CAGAGAGG','SB01_DP_TAAGGCGA','GS250_DP_CTCTCT','GS251_DP_CAGAGA','GS244_12h_NKT_TAAGGC','GS245_12h_NKT_CGTACT','GS394_24h_NKT_TAAGGCGA','SB04_24h_NKT_CGAGGCTG','GS395_24h_NKT_TAAGGCGA','SB03_24h_NKT_CGAGGCTG','SB06_36h_NKT_AAGAGGCA','GS396_36h_NKT_CGTACTAG','GS397_36h_NKT_CGTACTAG','GS398_48h_NKT_AGGCAGAA','SB09_48h_NKT_CGTACTAG','SB10_48h_NKT_CGTACTAG','SB13_60h_NKT_AGGCAGAA','GS399_60h_NKT_TCCTGAGC','SB12_60h_NKT_CGTACTAG','GS400_72h_NKT_GGACTCCT','SB17_72h_NKT_GTCGTGAT','SB18_72h_NKT_CTCTCTAC','SB16_72h_NKT_CTCTCTAC','SB15_72h_NKT_TCCTGAGC','GS401_84h_NKT_TCCTGAGC','SB21_84h_NKT_GGACTCCT','SB22_96h_NKT_TAGGCATG','GS402_96h_NKT_TAGGCATG','GS247_5d_NKT_TCCTGA','GS246_5d_NKT_AGGCAG','GS403_NKT1_CTCTCTAC','GS248_NKT1_GGACTC','GS249_NKT1_TAGGCA']
+tabPeaksDF        = tabPeaksDF[new_columns_order]
+
+# Save the DF as tab separated file
+taboutput_file = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.tab"
+tabPeaksDF.to_csv(taboutput_file, sep='\t', index = False, float_format='%.2g')
+
 # Principal component analysis
 features = topPeaksDF.columns.tolist()
 x        = topPeaksDF.T
@@ -168,8 +187,6 @@ import umap
 reducer   = umap.UMAP(n_components=5)
 embedding = reducer.fit_transform(topPeaksDF.T)
 umapDF = pd.DataFrame(data = embedding, columns = ['UMap1', 'UMap2','UMap3', 'UMap4','UMap5'])
-
-# Add the cellLines information
 timeline = [x.split('_')[1] for x in features]
 umapDF = pd.concat([umapDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
 umapDF['batch'] = sum([['B1'] * 8,['B2'] * 10,['B3'] * 15], [])
