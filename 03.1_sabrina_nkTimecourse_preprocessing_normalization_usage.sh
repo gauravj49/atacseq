@@ -128,11 +128,16 @@ SampleTable <- subset(SampleTable, select = -c(V1_1, V1_3, V1_4))
 # Get the dds object
 dds <- DESeqDataSetFromMatrix(colData  = SampleTable, countData=countdata, design = ~timepoints)
 
+# Relative Log Transformation
 # Transform data to log space and visualize samples
 rld <- rlogTransformation(dds, blind = TRUE)
+
+# Convert rownames as feature column to save it in the csv file
+rld           <- cbind(feature = rownames(rld), rld)
+rownames(rld) <- 1:nrow(rld)
+# Save the counts file to output csv file
 outputFile <- "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rlogCounts.matrix"
-
-
+write.table(rld   , file = outputFile , row.names = F, sep = '\t', quote = F)
 
 # VST 
 vst         <- varianceStabilizingTransformation(dds, blind=TRUE)  

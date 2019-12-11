@@ -14,14 +14,35 @@ pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
 # Input and output files
-input_file = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.matrix"
+input_file      = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.matrix"
 rankoutput_file = "/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_vstCounts.ranks"
+read_cutoff     = 5
+sample_pc       = 75
 
 # Import data into the dataframe
 peaksDF    = pd.read_csv(input_file, sep="\t", index_col=0)
 
 # Get the total sum for each peak
 librarySizeDF = peaksDF.sum(axis=0)
+
+# Filter peaks sum of 20 in all the samples
+origPeaksDF = peaksDF.copy()
+
+# Xrna = peaksDF.T.copy()
+# # Filter the reads that are less than say 25
+# # find all the peaks that have 25 or more reads in more than 95% of the data
+# # There np.array(Xrna) <= .... np.array() is very important for broadcasting
+# try:
+#         print("\t- Filtering peaks that have {0} or les reads in more than {1}% of the data".format(read_cutoff,sample_pc))
+#         fXrna = Xrna[np.array(Xrna)<=np.nanpercentile(Xrna, sample_pc, axis=0)].mean(axis=0) >= read_cutoff
+#         Xrna  = Xrna.loc[:,fXrna]
+#         print(Xrna.shape)
+# except Exception as e:
+#         print "\n\t- An error occured while filtering reads:\n\t- {0}".format(e)
+#         pass
+
+# Filter peaks with sum of peaks less than 75 for all samples
+peaksDF = peaksDF[peaksDF.sum(axis=1) >= 75]
 
 # Get the variance for each peak
 peaksDF['variance'] = peaksDF.var(axis=1)
@@ -54,9 +75,12 @@ pca   = PCA(n_components=5)
 pcs   = pca.fit_transform(x)
 pcaDF = pd.DataFrame(data = pcs, columns = ['PC1', 'PC2','PC3', 'PC4','PC5'])
 
-
 # Add the cellLines information
 pcaDF = pd.concat([pcaDF, pd.DataFrame(data=features, columns=['CellLines'])], axis = 1)
+
+# Add batch information
+pcaDF['batch'] = sum([['B1'] * 8,['B2'] * 10,['B3'] * 15], [])
+pcaDF = pd.concat([pcaDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
 
 # Add groups information
 # https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
@@ -124,6 +148,36 @@ pcaPlotPdf = "{0}_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
 plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
 # plt.show()
 plt.close('all')
+
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1) 
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=100, style='batch', alpha=0.8, palette='tab20')
+box = g.axes.get_position() # get position of figure
+g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
+g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
+ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
+ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
+ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+pcaPlotPdf = "{0}_batch_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
+plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
+# plt.show()
+plt.close('all')
+
+# UMAP
+import umap
+reducer   = umap.UMAP(n_components=5)
+embedding = reducer.fit_transform(topPeaksDF.T)
+umapDF = pd.DataFrame(data = embedding, columns = ['UMap1', 'UMap2','UMap3', 'UMap4','UMap5'])
+
+# Add the cellLines information
+timeline = [x.split('_')[1] for x in features]
+umapDF = pd.concat([umapDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
+umapDF['batch'] = sum([['B1'] * 8,['B2'] * 10,['B3'] * 15], [])
+g = sns.scatterplot(x='UMap1', y='UMap2', data=umapDF, hue='timeline', s=100, style='batch', alpha=0.8, palette='tab20')
+plt.gca().set_aspect('equal', 'datalim')
+plt.gca().set_title('UMAP projection of Top 1% variance ranked peaks', fontsize = 20)
+umapPlotPdf = "{0}_batch_timeline_UMAP_plot.pdf".format(get_file_info(input_file)[3])
+plt.savefig(umapPlotPdf,bbox_inches = 'tight')
 
 # Generate the heatmap of top 1% varied peaks
 sns.set(font_scale=0.5)
