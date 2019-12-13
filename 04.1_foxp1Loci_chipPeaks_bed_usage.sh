@@ -1,40 +1,23 @@
 # pwd
 cd /home/rad/users/gaurav/users/thorsten/foxp1Loci
 
-# Input file source: Original foxp1 chipseq publication (GSE31006)
-# Parse fasta header to get foxp1 peaks location
-# Take the peaks midpoint and get the start and end by -/+ 50 bp
-# >P-146-1~chr10~123822928~ChIP:~170.682~control:~1.128~region:~123822692-123823121~ef:~151.313~ps:~65~cor:~0.593556~-log10_qv:~7632.53~-log10_pv:~7637.52~qv_rank:~33
-# Extract chr10~123822928
-# Chrom: chr10
-# Start: 123822928 - 50
-# End  : 123822928 + 50
-# Name : P-146-1
+# Get input foxp1 chipseq peaks files
+# publication: Konopacki, C., Pritykin, Y., Rubtsov, Y., Leslie, C. S., & Rudensky, A. Y. (2019). Transcription factor Foxp1 regulates Foxp3 chromatin binding and coordinates regulatory T cell function. Nature immunology, 20(2), 232.
+# Source: https://www.nature.com/articles/s41590-018-0291-z?platform=oscar&draft=collection#Sec30
+# File: 41590_2018_291_MOESM3_ESM-2.xlsx
+# Converted the treg excel to bed
+# head /home/rad/users/gaurav/users/thorsten/foxp1Loci/input/foxp1_treg_peaks.bed 
+# ┌───────┬──────────┬──────────┬──────────────────────────────────┐
+# │ chrom │  start   │   end    │               name               │
+# ├───────┼──────────┼──────────┼──────────────────────────────────┤
+# │ chr17 │ 33716102 │ 33716770 │ foxp1_peak_24454_promoter_March2 │
+# │ chr17 │ 33718550 │ 33719080 │ foxp1_peak_24456_promoter_March2 │
+# │ chr15 │ 31530767 │ 31531403 │ foxp1_peak_19171_promoter_March6 │
+# │ chr2  │ 60210280 │ 60210878 │ foxp1_peak_30703_promoter_March7 │
+# └───────┴──────────┴──────────┴──────────────────────────────────┘
 
 # 1) ################################################################################################################
 ipython
-
-# Input file
-input_file  = '/home/rad/users/gaurav/users/thorsten/foxp1Loci/input/GSM768310_FOXP1_ChIP-Seq_1_peaks_200bp.fa'
-
-# Output file and handle
-output_file = '/home/rad/users/gaurav/users/thorsten/foxp1Loci/output/GSM768310_FOXP1_ChIP-Seq_1_peaks_200bp.bed'
-ofile = open(output_file, 'w')
-
-# Parse fasta file and generate the bed file
-with open(input_file) as fp:
-    for header, _seq in read_fasta(fp):
-      name, chrom, midpoint, _rest = header.split('~', 3) # '>P-146-1', 'chr10', '123822928'
-      start = int(midpoint) - 50 
-      end   = int(midpoint) + 50 
-      name  = "{0}_{1}_{2}_{3}".format(chrom, start, end, name.lstrip('>'))
-      line  = "\t".join([chrom, str(start), str(end), name])
-      ofile.write("{0}\n".format(line))
-ofile.close()
-
-# Sort the output bed file
-os.system("sort -k1,1 -k2n {0} -o {0}".format(output_file))
-print ("\n- Your text  output file is: {0}".format(output_file))
 
 # Get the peaks tab file for atacseq data
 # Input and output files
@@ -99,7 +82,7 @@ for f in ${od}/*.bed; do sed -i '/JH/d' ${f}; done;
 
 # 2.3) Get the mean score of atacseq peaks for the foxp1 region
 pd="$(dirname ${peakMatrix})/foxp1Peaks"; mkdir -p ${pd}
-ib="/home/rad/users/gaurav/users/thorsten/foxp1Loci/output/GSM768310_FOXP1_ChIP-Seq_1_peaks_200bp.bed"
+ib="/home/rad/users/gaurav/users/thorsten/foxp1Loci/input/foxp1_treg_peaks.bed"
 sort -k1,1 -k2n ${ib} -o ${ib}
 for bbed in ${od}/*.bed;
 do
@@ -142,8 +125,9 @@ peaksDF = peaksDF.astype('float')
 zscorePeaksDF     = pd.DataFrame(pd.DataFrame(peaksDF.apply(zscore, axis=1))[0].values.tolist(), columns=peaksDF.columns.tolist(), index=peaksDF.index)
 
 # Plot the heatmap for all replicates separately for all time points
-sns.set(font_scale=0.25)
-g = sns.clustermap(zscorePeaksDF, cmap='RdBu_r', figsize=(5,15)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
+sns.set(font_scale=1.25)
+g = sns.clustermap(zscorePeaksDF, cmap='RdBu_r', figsize=(10,25), yticklabels=False); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
+
 heatmapPlotPdf = "{0}_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
 
 #########################################
