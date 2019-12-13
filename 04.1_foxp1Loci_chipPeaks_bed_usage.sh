@@ -145,3 +145,15 @@ zscorePeaksDF     = pd.DataFrame(pd.DataFrame(peaksDF.apply(zscore, axis=1))[0].
 sns.set(font_scale=0.25)
 g = sns.clustermap(zscorePeaksDF, cmap='RdBu_r', figsize=(5,15)); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
 heatmapPlotPdf = "{0}_heatmap.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
+
+#########################################
+# Save session
+import dill
+filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
+dill.dump_session(filename)
+
+# and to load the session again:
+import dill
+filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
+dill.load_session(filename)
+#########################################
