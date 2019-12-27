@@ -141,3 +141,60 @@ import dill
 filename = "{0}_session.pkl".format(get_file_info(output_file)[3])
 dill.load_session(filename)
 #########################################
+
+# Cluster information
+# https://support.bioconductor.org/p/93424/
+# https://stackoverflow.com/questions/27820158/pheatmap-in-r-how-to-get-clusters
+
+# Sort input file and remove duplicate lines
+f='/home/rad/users/gaurav/users/thorsten/foxp1Loci/output/foxp1loci_merge_peaks_averageReads.txt'
+(head -n 1 ${f} && tail -n +2 ${f} | sort -u) > tmp && mv tmp ${f}
+
+# Draw heatmap with clusterIDs and save the clusterIDs in a separate file
+R
+suppressPackageStartupMessages(library(pheatmap))
+suppressPackageStartupMessages(library(matrixStats))
+suppressPackageStartupMessages(library(data.table))
+
+## Get the input data
+cat("- Reading input file ...\n")
+inputfile              <- '/home/rad/users/gaurav/users/thorsten/foxp1Loci/output/foxp1loci_merge_peaks_averageReads.txt'
+allDataOrig            <- data.frame(fread(inputfile, header=TRUE, sep="\t"), check.names=F)
+row.names(allDataOrig) <- allDataOrig$name
+allDataOrig[1]         <- NULL
+
+# Get the number of rows and columns
+ncols  <- length(names(allDataOrig))
+nrows  <- length(rownames(allDataOrig))
+cat("- Total samples : ", ncols,"\n- Total features: ", nrows, "\n")
+
+# Create the output directories and files
+cat("\n2) Create the output directories and files ...\n")
+basefilename    <- tools::file_path_sans_ext(basename(inputfile))
+extfilename     <- tools::file_ext(inputfile)
+outfilebasename <- paste0(dirname(inputfile),"/",basefilename)
+
+# Plot the heatmap with the new cluster and order and save it to the output file
+pdffile         <- paste0(outfilebasename,"_clustered_peaks.pdf");
+clusterfile     <- paste0(outfilebasename,"_mit_cluster_labels.txt");
+
+# Get the clusters and save it to the file
+numClusters          <- 4
+# scaled_df            <- as.data.frame(matrix(scale(c(as.matrix(allDataOrig))), nrow=nrows, byrow=TRUE))
+scaled_df            <- (allDataOrig - rowMeans(allDataOrig))/(rowSds(as.matrix(allDataOrig)))[row(allDataOrig)]
+colnames(scaled_df)  <- colnames(allDataOrig)
+row.names(scaled_df) <- row.names(allDataOrig)
+resHeatmap           <- pheatmap(scaled_df, cutree_row=numClusters, show_rownames=F, silent=T)
+allDataClust         <- cbind(scaled_df, cluster = cutree(resHeatmap$tree_row, k= numClusters))
+
+# Save the clusterIDs to output file
+fwrite(allDataClust, file=clusterfile, quote=F, row.names=T, sep='\t',  nThread=48)
+
+# Get clusters for annoataion
+annClust        <- allDataClust['cluster']
+
+# Treat them as factors so that they are not plotted as continuous data
+annClust$cluster <- as.factor(annClust$cluster)
+
+# Draw the final cluster
+finHeatmap      <- pheatmap(scaled_df, filename=pdffile, cutree_row=numClusters, show_rownames=F, annotation_row=annClust)
