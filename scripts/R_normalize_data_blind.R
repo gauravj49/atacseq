@@ -1,3 +1,5 @@
+#! /usr/bin/env Rscript
+
 # ****************************************************************
 # GOAL  : Normalize with various methods:
 # 		  - Quantile normalization
@@ -186,7 +188,7 @@ get_counts_matrix <- function(inputDir, rnaClass){
 	return(mergedDataTab)
 
 }
-
+##################### USER DEFINIED FUNCTIONS #########################
 # Load Libraries
 load_libraries <- function(){
 	# Load libraries at start

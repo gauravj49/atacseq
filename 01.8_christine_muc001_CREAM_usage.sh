@@ -16,7 +16,7 @@ IdentifiedCOREs <- CREAM(in_path = "/media/rad/SSD1/atac_temp/christine/AGRad_AT
 # > 
 
 # Save the data frame into a output file
-outputFile       <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs.bed"
+outputFile       <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs.bed"
 coreDF           <- data.frame(IdentifiedCOREs[,c(1:3,6)])
 colnames(coreDF) <- c('chr','start','end','COREs_score')
 fwrite(coreDF, file=outputFile, quote=F, row.names=F, col.names=F, sep='\t',  nThread=48)
@@ -28,7 +28,7 @@ system(paste0("sort -k1,1 -k2n ", outputFile, " -o ", outputFile))
 
 # Get the tab seaprated raw counts of the merged peaks for all the samples
 # Using deeptools
-multiBamSummary BED-file --BED "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs.bed" --bamfiles /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.npz" --outRawCounts "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.tab" -p 64
+multiBamSummary BED-file --BED "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs.bed" --bamfiles /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.npz" --outRawCounts "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.tab" -p 64
 
 #****************************************************************************************************
 # Add peaknames to the file
@@ -38,8 +38,8 @@ pd.set_option('display.max_rows', 5)
 pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
-input_file  = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.tab"
-output_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.matrix"
+input_file  = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.tab"
+output_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.matrix"
 peaksDF = pd.read_csv(input_file, sep="\t")
 # Fix column names: From #chr to chr and remove <'>
 peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_r1_001_rmdup", '')
@@ -63,8 +63,8 @@ peaksDF.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.
 # Normalize raw matrix with vst
 R
 suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=TRUE))
-inputFile  <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.matrix"
-outputFile <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix"
+inputFile  <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_rawCounts.matrix"
+outputFile <- "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix"
 # Import data from featureCounts
 countdata <- read.table(inputFile, header=TRUE, row.names=1, check.names = FALSE)
 coldata   <- data.frame(row.names=colnames(countdata), samples=colnames(countdata))
@@ -90,8 +90,8 @@ pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
 # Input and output files
-input_file      = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix"
-rankoutput_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.ranks"
+input_file      = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix"
+rankoutput_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.ranks"
 
 # Import data into the dataframe
 originalPeaksDF = pd.read_csv(input_file, sep="\t", index_col=0)
@@ -287,7 +287,7 @@ def label_point(x, y, val, ax):
 # CLtr +D +D
 #****************************************************************************************************
 # Sort input file and remove duplicate lines
-f='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix'
+f='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix'
 (head -n 1 ${f} && tail -n +2 ${f} | sort -u) > tmp && mv tmp ${f}
 
 # Draw heatmap with clusterIDs and save the clusterIDs in a separate file
@@ -298,7 +298,7 @@ suppressPackageStartupMessages(library(matrixStats))
 
 ## Get the input data
 cat("- Reading input file ...\n")
-inputfile              <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix'
+inputfile              <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/merged/5320_53631_53646_6075_merge_master_peaks_COREs_vstCounts.matrix'
 allDataOrig            <- data.frame(fread(inputfile, header=TRUE, sep="\t"), check.names=F)
 row.names(allDataOrig) <- allDataOrig$name
 allDataOrig[1]         <- NULL
@@ -338,3 +338,16 @@ annClust$cluster <- as.factor(annClust$cluster)
 
 # Draw the final cluster
 finHeatmap      <- pheatmap(scaled_df, filename=pdffile, cutree_row=numClusters, show_rownames=F, annotation_row=annClust, height=30, width=10)
+
+
+
+# 
+
+for f in /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam
+do
+ echo ${f}
+ bname=$(basename ${f} .bam)
+ od=$(dirname ${f}/bigwig)
+ bamCoverage -b ${f} -o /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/bigwig/${bname}.bw -p 64
+done
+
