@@ -341,13 +341,13 @@ finHeatmap      <- pheatmap(scaled_df, filename=pdffile, cutree_row=numClusters,
 
 
 
-# 
-
+# bam to bigwig using deeptools bamCoverage
 for f in /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam
 do
  echo ${f}
  bname=$(basename ${f} .bam)
- od=$(dirname ${f}/bigwig)
- bamCoverage -b ${f} -o /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/bigwig/${bname}.bw -p 64
+ od=$(dirname ${f})/bigwig
+ bamCoverage -b ${f} -o ${od}/${bname}.bw -p 64
+ echo ""
 done
 
