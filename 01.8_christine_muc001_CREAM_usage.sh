@@ -339,8 +339,6 @@ annClust$cluster <- as.factor(annClust$cluster)
 # Draw the final cluster
 finHeatmap      <- pheatmap(scaled_df, filename=pdffile, cutree_row=numClusters, show_rownames=F, annotation_row=annClust, height=30, width=10)
 
-
-
 # bam to bigwig using deeptools bamCoverage
 for f in /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam
 do
