@@ -39,6 +39,11 @@ cd /home/rad/users/gaurav/projects/ctrc/scripts/CLL_TFnetworks_2018
 python2.7 CRC2.py -e /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/filtered/unique_cores_5320_PPT-1_005.txt -b /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/5320_PPT-1_005_atac_028_S9_R1_001_rmdup.bam -g mm10 -o /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/crcs -n crcs_for_unique_cores_5320_PPT-1_005
 cd -
 
+# 5320_PPT-1
+cd /home/rad/users/gaurav/projects/ctrc/scripts/CLL_TFnetworks_2018
+python2.7 CRC2.py -e /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/filtered/5320_PPT-1_005_atac_028_S9_R1_001_rmdup_peaks_COREs_score_gt_10k.bed -b /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/5320_PPT-1_005_atac_028_S9_R1_001_rmdup.bam -g mm10 -o /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/crcs -n crcs_for_5320_PPT-1_005
+cd -
+
 # Get motifs using homer
 awk '{ print $2 "\t" $3 "\t" $4 "\t" $1 }' /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/filtered/unique_cores_5320_PPT-1_005.txt > tmp && mv tmp /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/cream/individual/cores/filtered/unique_cores_5320_PPT-1_005.txt
 
