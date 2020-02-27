@@ -42,6 +42,37 @@ peaksDF.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.
 # Cltr+D+D
 #****************************************************************************************************
 
+# Create binary peaks flag annotation matrix
+peaksTabFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab'
+peaksAnnFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.txt'
+peakFilesDir='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/peakFiles'
+tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
+colstofilter="," # Column numbers to be extracted at the end
+i=1              #
+header="Chrom\tStart\tEnd\tPeakID\t"        
+for p in ${peakFilesDir}/*.narrowPeak;
+do
+ bname=$(basename ${p} _R1_001_rmdup_peaks.narrowPeak)
+ outfile=${tempPkAnnDir}/${bname}.bed
+ intersectBed -a ${peaksTabFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
+ colstofilter=$(echo "${colstofilter}$((i*5)),");
+ header=$(echo -e "${header}${bname}\t")
+ echo "${i}) ${bname}: ${colstofilter}"
+ echo ""
+ i=$((i+1));
+done
+
+# Remove last "," from the string
+colstofilter=$(echo ${colstofilter}|sed 's/,$//')
+# ,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90
+
+# Paste output the file with multiple delimiters
+# Columns from one files are space separated and multiple files are separated by space
+# Using sed to convert the tabs to spaces and then using cut to get the final columns
+paste *.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnFile}
+
+# Add the header to the file
+sed  -i "1i${header}" ${peaksAnnFile}
 
 ############# DOCS #############
 # From the pca, it seems
