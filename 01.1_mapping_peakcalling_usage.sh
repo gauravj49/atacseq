@@ -105,6 +105,30 @@ mkdir -p ${mappingDir} ${scriptsdir} ${multiqcDir}
 bash scripts/01_map_singleendFastQ_bowtie2.sh ${fastqdir} ${mappingDir} ${projName} ${species}
 cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
 
+# 2.3) For myeloid mouse cell lines
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+species="mm10"
+user="anja"
+projName="myeloid"
+projDir="/media/rad/HDD1/atacseq/anja/myeloid"
+fastqdir="${projDir}/fastq"
+mappingDir="${projDir}/mapping"
+scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
+multiqcDir="${projDir}/qc/multiqc"; 
+
+# Create relevant dirs
+mkdir -p ${mappingDir} ${scriptsdir} ${multiqcDir}
+
+# # Copy the files and rename the samples
+# ls /media/nas/temporary/PUB_CRCs/download_9_myeloid/*_atacseq_* | parallel --progress --eta -j 16 "rsync -arvP {} /media/rad/HDD1/atacseq/anja/myeloid/fastq"
+
+# Perform mapping
+bash scripts/01_map_pairedendFastQ_bowtie2.sh ${fastqdir} ${mappingDir} ${projName} ${species}
+cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+# Convert bam to bigwig using deeptools bamCoverage
+bigwigdir="/media/rad/HDD1/atacseq/anja/myeloid/bigwig"; mkdir -p ${bigwigdir}
+for f in /media/rad/HDD1/atacseq/anja/myeloid/mapping/bams/trimmed/*_rmdup.bam; do  echo ${f}; bname=$(basename ${f} .bam); bamCoverage -b ${f} -o ${bigwigdir}/${bname}.bw -p 64; echo ""; done
+
 
 # 3) Sabrin Bortoluzzi from AG Schmidt-Supprian 
 # 3.1) For the NK-Timecouse ATACseq samples
@@ -133,7 +157,7 @@ projName="nkTimecourse"
 projDir="/home/rad/media/rad/HDD1/atacseq/sabrina/nkTimecourse"
 fastqdir="${projDir}/fastq"
 mappingDir="${projDir}/mapping"
-bamdir="${projDir}/mapping/bams/trimmed"
+bamdir="${projDir}/bams/trimmed"
 peaksdir="${projDir}/peaks"
 scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
 mkdir -p ${scriptsdir} ${bam} ${peaksdir}

@@ -13,6 +13,9 @@ bash scripts/mergePeaks.sh
 # Using deeptools
 multiBamSummary BED-file --BED /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed --bamfiles /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.npz --outRawCounts /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab -p 64
 
+# Sort the input file
+sort -k1,1V -k2,2g -k3,3g "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab" -o "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+
 # Add peaknames to the file
 ipython
 #****************************************************************************************************
@@ -21,48 +24,54 @@ pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
 input_file  = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
-output_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
+outtxt_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt"
+outmat_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
+
 peaksDF = pd.read_csv(input_file, sep="\t")
 # Fix column names: From #chr to chr and remove <'>
-peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_r1_001_rmdup", '')
-# rename the first column from #chr to chr
-peaksDF.rename(columns={ peaksDF.columns[0]: "chr" }, inplace = True)
+peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_atacseq_mm_se_rmdup", '')
+# rename the first three column from #chr to PeakChrom, start to PeakStart and end to PeakEnd
+peaksDF.rename(columns={ peaksDF.columns[0]: "PeakChrom" }, inplace = True)
+peaksDF.rename(columns={ peaksDF.columns[1]: "PeakStart" }, inplace = True)
+peaksDF.rename(columns={ peaksDF.columns[2]: "PeakEnd"   }, inplace = True)
 # Add peaks names to the dataframe
-peaksDF.insert (3, "name", ["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()])
-peaksDF['peakID'] = peaksDF['chr'].str.cat(peaksDF['start'].apply(str), sep='_').str.cat(peaksDF['end'].apply(str), sep='_').str.cat(peaksDF['name'], sep='_')
-# Get column names 
-colNames = peaksDF.columns.tolist()
-# Move peakID to the front
-colNames.insert(0, colNames.pop(colNames.index('peakID')))
-# Reorder columns using df.reindex() function
-peaksDF = peaksDF.reindex(columns= colNames)
+# peaksDF.insert (3, "name", ["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()])
+# peaksDF['peakID'] = peaksDF['PeakChrom'].str.cat(peaksDF['PeakStart'].apply(str), sep='_').str.cat(peaksDF['PeakEnd'].apply(str), sep='_').str.cat(peaksDF['name'], sep='_')
+peaksDF.insert (3, "PeakID", peaksDF['PeakChrom'].str.cat(peaksDF['PeakStart'].apply(str), sep='_').str.cat(peaksDF['PeakEnd'].apply(str), sep='_').str.cat(["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()], sep='_'))
+# Save the text file
+peaksDF.to_csv(outtxt_file, index=False, header=True, sep="\t", float_format='%.0f')
+
 # Drop additional columns
-peaksDF.drop(columns=['chr','start','end','name'], inplace=True)
-peaksDF.to_csv(output_file, index=False, header=True, sep="\t", float_format='%.0f')
+peaksDF.drop(columns=['PeakChrom','PeakStart','PeakEnd'], inplace=True)
+peaksDF.to_csv(outmat_file, index=False, header=True, sep="\t", float_format='%.0f')
 # Cltr+D+D
 #****************************************************************************************************
 
+############# Annotation Matrix File #############
 # Create binary peaks flag annotation matrix
-peaksTabFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab'
-peaksAnnFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.txt'
+peaksTabFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt'
+peaksBedFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed'
+peaksAnnFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
 peakFilesDir='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/peakFiles'
 tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
+
+# Get the bed file
+cut -f1-4 ${peaksTabFile} | sed '1d' > ${peaksBedFile}
 colstofilter="," # Column numbers to be extracted at the end
 i=1              #
-header="Chrom\tStart\tEnd\tPeakID\t"        
-for p in ${peakFilesDir}/*.narrowPeak;
+header="PeakChrom\tPeakStart\tPeakEnd\tPeakID\t"        
 do
- bname=$(basename ${p} _R1_001_rmdup_peaks.narrowPeak)
- outfile=${tempPkAnnDir}/${bname}.bed
- intersectBed -a ${peaksTabFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
- colstofilter=$(echo "${colstofilter}$((i*5)),");
- header=$(echo -e "${header}${bname}\t")
- echo "${i}) ${bname}: ${colstofilter}"
- echo ""
- i=$((i+1));
+    bname=$(basename ${p} _R1_001_rmdup_peaks.narrowPeak)
+    outfile=${tempPkAnnDir}/${bname}.bed
+    intersectBed -a ${peaksBedFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
+    colstofilter=$(echo "${colstofilter}$((i*5)),");
+    header=$(echo -e "${header}${bname}\t")
+    echo "${i}) ${bname}: ${colstofilter}"
+    echo ""
+    i=$((i+1));
 done
 
-# Remove last "," from the string
+# Remove last "," from the from the colstofilter and last tab from the header
 colstofilter=$(echo ${colstofilter}|sed 's/,$//')
 # ,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90
 
@@ -73,6 +82,134 @@ paste *.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstof
 
 # Add the header to the file
 sed  -i "1i${header}" ${peaksAnnFile}
+
+# Removing the last tab in the header
+sed -i 's/\t$//' ${peaksAnnFile} 
+
+# # Get the bed file without the peaks column
+# peaksAnnBed='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.bed'
+# cut -f1-4 ${peaksAnnFile} > ${peaksAnnBed}
+# # Remove header
+# sed -i '1d' ${peaksAnnBed}
+
+# Add genomic annotation using annotater
+R
+# if (!requireNamespace("BiocManager", quietly=TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("annotatr")
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(annotatr))
+suppressPackageStartupMessages(library(ChIPseeker))
+suppressPackageStartupMessages(library(genomation))
+suppressPackageStartupMessages(library(UpSetR))
+suppressPackageStartupMessages(library(TxDb.Mmusculus.UCSC.mm10.ensGene))
+suppressPackageStartupMessages(library(ReactomePA))
+txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene 
+
+# Annotate each sample peaks with ChIPseeker
+# Read bed file
+cat("\n\t- Reading the bed file\n")
+inputfile  <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
+outputfile <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.txt'
+
+origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
+peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
+# peaksBed <- readGeneric(origPeakDT,chr=1,start=2,end=3,strand=NULL)
+
+# Annotate regions
+cat("\n\t- Annotate regions\n")
+peakAnno <- annotatePeak(peaksBed, tssRegion=c(-3000, 3000), TxDb=txdb, annoDb="org.Mm.eg.db")
+
+# Convert to dataframe 
+peakAnnoDT <- as.data.table(peakAnno)
+
+# Rename the header
+# Original header: > colnames(as.data.table(peakAnno))
+# [1]  "seqnames"      "start"         "end"           "width"        
+# [5]  "strand"        "annotation"    "geneChr"       "geneStart"    
+# [9]  "geneEnd"       "geneLength"    "geneStrand"    "geneId"       
+# [13] "transcriptId"  "distanceToTSS" "ENTREZID"      "SYMBOL"       
+# [17] "GENENAME" 
+setnames(peakAnnoDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakWidth", "PeakStrand", "DetailedGenomicAnnotation", "GeneChrom", "GeneStart", "GeneEnd", "GeneLength", "GeneStrand", "GeneID", "TranscriptID", "DistanceToTSS", "EntrezID", "GeneName", "GeneDesc", "GenomicAnnotation"))
+
+# Copy the DetailedGenomicAnnotation column as GenomicAnnotation column
+peakAnnoDT[,GenomicAnnotation:=DetailedGenomicAnnotation]
+
+# Replace the detailed annotation to the abstract annotation
+peakAnnoDT[DetailedGenomicAnnotation %like%   'exon 1 '   , GenomicAnnotation:='ExonFirst']
+peakAnnoDT[!(DetailedGenomicAnnotation %like% 'exon 1 ')  , GenomicAnnotation:='ExonOther']
+peakAnnoDT[DetailedGenomicAnnotation %like%   'intron 1 ' , GenomicAnnotation:='IntronFirst']
+peakAnnoDT[!(DetailedGenomicAnnotation %like% 'intron 1 '), GenomicAnnotation:='IntronOther']
+peakAnnoDT[DetailedGenomicAnnotation=='Distal Intergenic' , GenomicAnnotation:='IntergenicDistal']
+peakAnnoDT[DetailedGenomicAnnotation=="3' UTR"            , GenomicAnnotation:='ThreeUTR']
+peakAnnoDT[DetailedGenomicAnnotation=="5' UTR"            , GenomicAnnotation:='FiveUTR' ]
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (1-2kb)', GenomicAnnotation:='DownstreamBasal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (<1kb)' , GenomicAnnotation:='DownstreamProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (2-3kb)', GenomicAnnotation:='DownstreamDistal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (1-2kb)'  , GenomicAnnotation:='PromoterBasal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (<=1kb)'  , GenomicAnnotation:='PromoterProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (2-3kb)'  , GenomicAnnotation:='PromoterDistal']
+
+# Reorder the columns
+setcolorder(peakAnnoDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakWidth", "PeakStrand", "GenomicAnnotation", "DetailedGenomicAnnotation", "GeneChrom", "GeneStart", "GeneEnd", "GeneLength", "GeneStrand", "GeneID", "TranscriptID", "DistanceToTSS", "EntrezID", "GeneName", "GeneDesc"))
+
+# peakAnnoDT[,unique(GenomicAnnotation)]
+#  [1] "IntronFirst"        "IntronOther"        "PromoterBasal"     
+#  [4] "ThreeUTR"           "IntergenicDistal"   "PromoterDistal"    
+#  [7] "PromoterProximal"   "DownstreamProximal" "DownstreamBasal"   
+# [10] "DownstreamDistal"   "FiveUTR"
+
+# Merge the orginal data table with annotation data table
+# There are few entires in the annotation data table that ...
+# ... were not present but the output datatable should be of same size as input
+# Create Temporary ID for merging
+origPeakDT[,mergeID:=paste0(PeakChrom,PeakStart,PeakEnd)] 
+peakAnnoDT[,mergeID:=paste0(PeakChrom,PeakStart,PeakEnd)] 
+
+# Merge on common ids and keep all the entires from the first data table
+mergedPeaksDT <- merge(peakAnnoDT, origPeakDT,all.y=T)
+
+# Remove the 
+mergedPeaksDT[, c('mergeID','PeakStrand') :=NULL]
+
+# Save results in the output file
+fwrite(mergedPeaksDT, outputfile, sep = "\t")
+
+# Sort alphanumerically with PeakID
+system(paste0("sort -k1,1V -k2,2g -k3,3g ", outputfile, " -o ", outputfile))
+
+cat(paste0("\t- ",outputfile,"\n"))
+
+#########################################################################
+# ## Get the input data
+# cat("- Reading input file ...\n")
+# inputfile   <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.bed'
+# allDataOrig <- data.frame(fread(inputfile, header=TRUE, sep="\t"), check.names=F)
+
+# # Reading Genomic Regions
+# peak_regions = read_regions(con = inputfile, genome = 'mm10', format = 'bed')
+
+# # Annotating Regions
+# # Select annotations for intersection with regions
+# annots = c('mm10_cpgs', 'mm10_basicgenes', 'mm10_genes_intergenic', 'mm10_genes_intronexonboundaries')
+
+# # Build the annotations (a single GRanges object)
+# annotations = build_annotations(genome = 'mm10', annotations = annots)
+
+# # Intersect the regions we read in with the annotations
+# peaks_annotated = annotate_regions(
+#     regions = peak_regions,
+#     annotations = annotations,
+#     ignore.strand = TRUE,
+#     quiet = FALSE)
+# # A GRanges object is returned
+# print(peaks_annotated)
+
+# # Coerce to a data.frame
+# df_peaks_annotated = data.frame(peaks_annotated)
+
+# # See the GRanges column of dm_annotaed expanded
+# print(head(df_peaks_annotated))
 
 ############# DOCS #############
 # From the pca, it seems
