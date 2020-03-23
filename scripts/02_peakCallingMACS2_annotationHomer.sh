@@ -4,10 +4,10 @@
 
 # Get input arguments
 jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
-trtBam=$1 # output/hgStomachF35/ENCFF300KHX_atacseq_hg_R1_PE100nt_subset1000.bam
-outdir=$2 # output/hgStomachF35/peaks
-species=$3          # hg19 or mm10
-projName=$4         # hgStomachF35
+trtBam=$1   # output/hgStomachF35/ENCFF300KHX_atacseq_hg_R1_PE100nt_subset1000.bam
+outdir=$2   # output/hgStomachF35/peaks
+species=$3  # hg19 or mm10
+projName=$4 # hgStomachF35
 
 # Set user defined environment variables
 bname=$(basename ${trtBam} .bam)

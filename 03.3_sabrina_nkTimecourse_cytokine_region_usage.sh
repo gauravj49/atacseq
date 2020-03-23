@@ -8,7 +8,8 @@ peakMatrix="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_a
 od="$(dirname ${peakMatrix})/samplesBed"
 mkdir -p ${od}
 header=$(head -1 ${peakMatrix})
-for i in {4..36};
+numCols=$(awk -F'\t' '{print NF; exit}' ${peakMatrix})
+for i in {4..${numCols}};
 do
  bname=$(cut -f${i} <<< ${header})
  echo ${bname}

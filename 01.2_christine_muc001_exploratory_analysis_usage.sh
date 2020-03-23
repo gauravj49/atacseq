@@ -3,7 +3,7 @@ cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
 # Get merged peaks
 # Get analysis dirs
-mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis
+mkdir -p /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis
 
 # modify the peaks list and output file in the megrePeaks.sh file at the begining
 # List of summit.bed is in array in the mergePeaks.sh script
@@ -11,10 +11,12 @@ bash scripts/mergePeaks.sh
 
 # Get the tab seaprated raw counts of the merged peaks for all the samples
 # Using deeptools
-multiBamSummary BED-file --BED /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed --bamfiles /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.npz --outRawCounts /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab -p 64
+multiBamSummary BED-file --BED /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed --bamfiles /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/bams/trimmed/*.bam --smartLabels -out /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.npz --outRawCounts /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab -p 64
 
-# Sort the input file
-sort -k1,1V -k2,2g -k3,3g "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab" -o "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+# Sort the input file with the header line intact
+# sort -k1,1V -k2,2g -k3,3g "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab" -o "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+infile="/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+(head -n 1 ${infile} && tail -n +2 ${infile} | sort -k1,1V -k2,2g -k3,3g) > ${infile}.tmp && mv ${infile}.tmp ${infile}
 
 # Add peaknames to the file
 ipython
@@ -23,9 +25,9 @@ pd.set_option('display.max_rows', 5)
 pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
-input_file  = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
-outtxt_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt"
-outmat_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
+input_file  = "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.tab"
+outtxt_file = "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt"
+outmat_file = "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
 
 peaksDF = pd.read_csv(input_file, sep="\t")
 # Fix column names: From #chr to chr and remove <'>
@@ -49,26 +51,30 @@ peaksDF.to_csv(outmat_file, index=False, header=True, sep="\t", float_format='%.
 
 ############# Annotation Matrix File #############
 # Create binary peaks flag annotation matrix
-peaksTabFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt'
-peaksBedFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed'
-peaksAnnFile='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
-peakFilesDir='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/peakFiles'
+peaksTxtFile='/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.txt'
+peaksBedFile='/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks.bed'
+peaksAnnFile='/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
+peakFilesDir='/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/peakFiles'
 tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
 
+#  Copy peaks file
+cp -rv /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*.broadPeak ${peakFilesDir}
+
 # Get the bed file
-cut -f1-4 ${peaksTabFile} | sed '1d' > ${peaksBedFile}
+cut -f1-4 ${peaksTxtFile} | sed '1d' > ${peaksBedFile}
 colstofilter="," # Column numbers to be extracted at the end
 i=1              #
-header="PeakChrom\tPeakStart\tPeakEnd\tPeakID\t"        
+header="PeakChrom\tPeakStart\tPeakEnd\tPeakID\t"
+for p in ${peakFilesDir}/*.broadPeak;        
 do
-    bname=$(basename ${p} _R1_001_rmdup_peaks.narrowPeak)
-    outfile=${tempPkAnnDir}/${bname}.bed
-    intersectBed -a ${peaksBedFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
-    colstofilter=$(echo "${colstofilter}$((i*5)),");
-    header=$(echo -e "${header}${bname}\t")
-    echo "${i}) ${bname}: ${colstofilter}"
-    echo ""
-    i=$((i+1));
+ bname=$(basename ${p} _peaks.broadPeak)
+ outfile=${tempPkAnnDir}/${bname}.bed
+ intersectBed -a ${peaksBedFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
+ colstofilter=$(echo "${colstofilter}$((i*5)),");
+ header=$(echo -e "${header}${bname}\t")
+ echo "${i}) ${bname}: ${colstofilter}"
+ echo ""
+ i=$((i+1));
 done
 
 # Remove last "," from the from the colstofilter and last tab from the header
@@ -78,7 +84,7 @@ colstofilter=$(echo ${colstofilter}|sed 's/,$//')
 # Paste output the file with multiple delimiters
 # Columns from one files are space separated and multiple files are separated by space
 # Using sed to convert the tabs to spaces and then using cut to get the final columns
-paste *.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnFile}
+paste ${tempPkAnnDir}/*.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnFile}
 
 # Add the header to the file
 sed  -i "1i${header}" ${peaksAnnFile}
@@ -86,31 +92,26 @@ sed  -i "1i${header}" ${peaksAnnFile}
 # Removing the last tab in the header
 sed -i 's/\t$//' ${peaksAnnFile} 
 
-# # Get the bed file without the peaks column
-# peaksAnnBed='/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.bed'
-# cut -f1-4 ${peaksAnnFile} > ${peaksAnnBed}
-# # Remove header
-# sed -i '1d' ${peaksAnnBed}
-
 # Add genomic annotation using annotater
 R
 # if (!requireNamespace("BiocManager", quietly=TRUE))
 #     install.packages("BiocManager")
 # BiocManager::install("annotatr")
 suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(annotatr))
 suppressPackageStartupMessages(library(ChIPseeker))
 suppressPackageStartupMessages(library(genomation))
 suppressPackageStartupMessages(library(UpSetR))
 suppressPackageStartupMessages(library(TxDb.Mmusculus.UCSC.mm10.ensGene))
-suppressPackageStartupMessages(library(ReactomePA))
-txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene 
+txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene
 
 # Annotate each sample peaks with ChIPseeker
 # Read bed file
 cat("\n\t- Reading the bed file\n")
-inputfile  <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
-outputfile <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.txt'
+inputfile  <- '/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.tab'
+outputfile <- '/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.txt'
+
+origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
+peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
 
 origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
 peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
@@ -130,7 +131,7 @@ peakAnnoDT <- as.data.table(peakAnno)
 # [9]  "geneEnd"       "geneLength"    "geneStrand"    "geneId"       
 # [13] "transcriptId"  "distanceToTSS" "ENTREZID"      "SYMBOL"       
 # [17] "GENENAME" 
-setnames(peakAnnoDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakWidth", "PeakStrand", "DetailedGenomicAnnotation", "GeneChrom", "GeneStart", "GeneEnd", "GeneLength", "GeneStrand", "GeneID", "TranscriptID", "DistanceToTSS", "EntrezID", "GeneName", "GeneDesc", "GenomicAnnotation"))
+setnames(peakAnnoDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakWidth", "PeakStrand", "DetailedGenomicAnnotation", "GeneChrom", "GeneStart", "GeneEnd", "GeneLength", "GeneStrand", "GeneID", "TranscriptID", "DistanceToTSS", "EntrezID", "GeneName", "GeneDesc"))
 
 # Copy the DetailedGenomicAnnotation column as GenomicAnnotation column
 peakAnnoDT[,GenomicAnnotation:=DetailedGenomicAnnotation]
@@ -143,11 +144,11 @@ peakAnnoDT[!(DetailedGenomicAnnotation %like% 'intron 1 '), GenomicAnnotation:='
 peakAnnoDT[DetailedGenomicAnnotation=='Distal Intergenic' , GenomicAnnotation:='IntergenicDistal']
 peakAnnoDT[DetailedGenomicAnnotation=="3' UTR"            , GenomicAnnotation:='ThreeUTR']
 peakAnnoDT[DetailedGenomicAnnotation=="5' UTR"            , GenomicAnnotation:='FiveUTR' ]
-peakAnnoDT[DetailedGenomicAnnotation=='Downstream (1-2kb)', GenomicAnnotation:='DownstreamBasal']
-peakAnnoDT[DetailedGenomicAnnotation=='Downstream (<1kb)' , GenomicAnnotation:='DownstreamProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (1-2kb)', GenomicAnnotation:='DownstreamProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (<1kb)' , GenomicAnnotation:='DownstreamBasal']
 peakAnnoDT[DetailedGenomicAnnotation=='Downstream (2-3kb)', GenomicAnnotation:='DownstreamDistal']
-peakAnnoDT[DetailedGenomicAnnotation=='Promoter (1-2kb)'  , GenomicAnnotation:='PromoterBasal']
-peakAnnoDT[DetailedGenomicAnnotation=='Promoter (<=1kb)'  , GenomicAnnotation:='PromoterProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (1-2kb)'  , GenomicAnnotation:='PromoterProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (<=1kb)'  , GenomicAnnotation:='PromoterBasal']
 peakAnnoDT[DetailedGenomicAnnotation=='Promoter (2-3kb)'  , GenomicAnnotation:='PromoterDistal']
 
 # Reorder the columns
@@ -170,7 +171,10 @@ peakAnnoDT[,mergeID:=paste0(PeakChrom,PeakStart,PeakEnd)]
 mergedPeaksDT <- merge(peakAnnoDT, origPeakDT,all.y=T)
 
 # Remove the 
-mergedPeaksDT[, c('mergeID','PeakStrand') :=NULL]
+mergedPeaksDT[, c('mergeID') :=NULL]
+
+# Move PeakID column to the 4th position
+setcolorder(mergedPeaksDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakID"))
 
 # Save results in the output file
 fwrite(mergedPeaksDT, outputfile, sep = "\t")
@@ -183,7 +187,7 @@ cat(paste0("\t- ",outputfile,"\n"))
 #########################################################################
 # ## Get the input data
 # cat("- Reading input file ...\n")
-# inputfile   <- '/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.bed'
+# inputfile   <- '/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_annotation.bed'
 # allDataOrig <- data.frame(fread(inputfile, header=TRUE, sep="\t"), check.names=F)
 
 # # Reading Genomic Regions
@@ -228,8 +232,8 @@ pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
 # Input and output files
-input_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
-rankoutput_file = "/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.ranks"
+input_file = "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.matrix"
+rankoutput_file = "/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/5320_53631_53646_6075_merge_master_peaks_rawCounts.ranks"
 
 # Import data into the dataframe
 peaksDF    = pd.read_csv(input_file, sep="\t", index_col=0)
@@ -399,11 +403,11 @@ peaksDF = peaksDF.loc[:,~peaksDF.columns.str.contains('004_', case=False)]
 # Source: http://quinlanlab.org/tutorials/bedtools/bedtools.html
 
 # Get summits peaks
-mkdir -p /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
-rsync -arvP  /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*_summits.bed /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+mkdir -p /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+rsync -arvP  /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*_summits.bed /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/summitBed
 
 # Get Jaccard statistic for all pairwise comparisons
-cd /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/summitBed
+cd /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/summitBed
 parallel "bedtools jaccard -a {1} -b {2} \
          | awk 'NR>1' \
          | cut -f 3 \
@@ -417,18 +421,18 @@ find . \
     | sed -e s"/\.\///" \
     | perl -pi -e "s/.bed./.bed\t/" \
     | perl -pi -e "s/.jaccard:/\t/" \
-    > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
+    > /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
 
 # Get proper names
-cat /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt \
+cat /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt \
 | sed -e 's/_R1_001_rmdup_summits.bed//g' \
-> tmp.txt && mv tmp.txt /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
+> tmp.txt && mv tmp.txt /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt
 
 # Convert pairwise interaction to matrix
-cat /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt | python /home/rad/users/gaurav/projects/seqAnalysis/atacseq/scripts/make_matrix.py > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix
+cat /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons.txt | python /home/rad/users/gaurav/projects/seqAnalysis/atacseq/scripts/make_matrix.py > /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix
 
 # Get labels for each dataset
-cut -f 1 /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix > /media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt
+cut -f 1 /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix > /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt
 
 # Start up R.
 R
@@ -441,14 +445,14 @@ blues <- colorRampPalette(c('dark blue', 'light blue'))
 greens <- colorRampPalette(c('dark green', 'light green'))
 reds <- colorRampPalette(c('pink', 'dark red'))
  
-x <- read.table('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix')
-labels <- read.table('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt')
+x <- read.table('/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix')
+labels <- read.table('/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_labels.txt')
 ngroups <- length(unique(labels))
 pca <- princomp(x)
 
 nb.cols <- dim(labels)[1]
 mycolors <- colorRampPalette(brewer.pal(9, "Set1"))(nb.cols)
-pdf('/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_pca.pdf')
+pdf('/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_pca.pdf')
 qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = mycolors) 
 # qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = c(blues(4), greens(5), reds(5))) 
 # qplot(pca$scores[,1], pca$scores[,2], color=factor(labels[,1]),     geom="point", size=1) + scale_color_manual(values = c(blues(5), greens(4), reds(6), oranges(3))) 
@@ -461,10 +465,10 @@ dev.off()
 ipython
 #****************************************************************************************************
 sns.set(font_scale=0.3)
-peaksDF = pd.read_csv("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix", sep="\t", index_col=0) 
+peaksDF = pd.read_csv("/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_distance.matrix", sep="\t", index_col=0) 
 g = sns.clustermap(peaksDF, vmax=0.02, cmap="ocean"); 
 g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize = 5)
-plt.savefig("/media/rad/SSD1/atac_temp/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
+plt.savefig("/media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/analysis/jaccard_pairwise_peaks_comparisons_heatmap.pdf")               
 #****************************************************************************************************
 
 def show_values_on_bars(axs, h_v="v", space=0.4):

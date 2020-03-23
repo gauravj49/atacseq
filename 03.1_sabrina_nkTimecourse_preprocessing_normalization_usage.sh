@@ -94,14 +94,14 @@ peaksDF.to_csv(outmat_file, index=False, header=True, sep="\t", float_format='%.
 
 ############# Annotation Matrix File #############
 # Create binary peaks flag annotation matrix
-peaksTabFile="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rawCounts.txt"
+peaksTxtFile="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_rawCounts.txt"
 peaksBedFile="/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks.bed"
 peaksAnnFile='/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/nkTimecourse_all_merge_master_peaks_annotation.tab'
 peakFilesDir='/media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/peakFiles'
 tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
 
 # Get the bed file
-cut -f1-4 ${peaksTabFile} | sed '1d' > ${peaksBedFile}
+cut -f1-4 ${peaksTxtFile} | sed '1d' > ${peaksBedFile}
 colstofilter="," # Column numbers to be extracted at the end
 i=1              #
 header="PeakChrom\tPeakStart\tPeakEnd\tPeakID\t"        
@@ -124,7 +124,7 @@ colstofilter=$(echo ${colstofilter}|sed 's/,$//')
 # Paste output the file with multiple delimiters
 # Columns from one files are space separated and multiple files are separated by space
 # Using sed to convert the tabs to spaces and then using cut to get the final columns
-paste /media/rad/HDD1/atacseq/sabrina/nkTimecourse/analysis/peakFiles/tempPkAnn/*.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnFile}
+paste ${tempPkAnnDir}/*.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnFile}
 
 # Add the header to the file
 sed  -i "1i${header}" ${peaksAnnFile}
@@ -189,11 +189,11 @@ peakAnnoDT[!(DetailedGenomicAnnotation %like% 'intron 1 '), GenomicAnnotation:='
 peakAnnoDT[DetailedGenomicAnnotation=='Distal Intergenic' , GenomicAnnotation:='IntergenicDistal']
 peakAnnoDT[DetailedGenomicAnnotation=="3' UTR"            , GenomicAnnotation:='ThreeUTR']
 peakAnnoDT[DetailedGenomicAnnotation=="5' UTR"            , GenomicAnnotation:='FiveUTR' ]
-peakAnnoDT[DetailedGenomicAnnotation=='Downstream (1-2kb)', GenomicAnnotation:='DownstreamBasal']
-peakAnnoDT[DetailedGenomicAnnotation=='Downstream (<1kb)' , GenomicAnnotation:='DownstreamProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (1-2kb)', GenomicAnnotation:='DownstreamProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Downstream (<1kb)' , GenomicAnnotation:='DownstreamBasal']
 peakAnnoDT[DetailedGenomicAnnotation=='Downstream (2-3kb)', GenomicAnnotation:='DownstreamDistal']
-peakAnnoDT[DetailedGenomicAnnotation=='Promoter (1-2kb)'  , GenomicAnnotation:='PromoterBasal']
-peakAnnoDT[DetailedGenomicAnnotation=='Promoter (<=1kb)'  , GenomicAnnotation:='PromoterProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (1-2kb)'  , GenomicAnnotation:='PromoterProximal']
+peakAnnoDT[DetailedGenomicAnnotation=='Promoter (<=1kb)'  , GenomicAnnotation:='PromoterBasal']
 peakAnnoDT[DetailedGenomicAnnotation=='Promoter (2-3kb)'  , GenomicAnnotation:='PromoterDistal']
 
 # Reorder the columns
