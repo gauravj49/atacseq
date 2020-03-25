@@ -144,20 +144,48 @@ cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*
 # 2.2) For T-ALL mouse cell lines
 jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
 species="mm10"
-user="sabrina"
-projName="nkTimecourse"
-projDir="/home/rad/media/rad/HDD1/atacseq/sabrina/nkTimecourse"
+user="anja"
+projName="tALLcellLineMm"
+
+projDir="/media/rad/HDD1/atacseq/${user}/${projName}"
 fastqdir="${projDir}/fastq"
-mappingDir="${projDir}/mapping"
 scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
-multiqcDir="${projDir}/qc/multiqc"; 
+multiqcDir="${projDir}/qc/multiqc"
+fastqcDir="${projDir}/qc/fastqc"
+logsDir="${projDir}/logs"
 
 # Create relevant dirs
-mkdir -p ${mappingDir} ${scriptsdir} ${multiqcDir}
+mkdir -p ${scriptsdir} ${multiqcDir} ${logsDir} ${fastqcDir}/00_original
 
 # Perform mapping
-bash scripts/01_map_singleendFastQ_bowtie2.sh ${fastqdir} ${mappingDir} ${projName} ${species}
+bash scripts/01_map_pairedendFastQ_bowtie2.sh ${fastqdir} ${projDir} ${projName} ${species}
 cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
+
+# Run multiqc on original files
+ls ${fastqdir}/*.gz | parallel --progress --eta -j 64 "fastqc -o ${fastqcDir}/00_original {}"
+multiqc -o ${multiqcDir} -n 01_original_fastq_stats_${projName} ${fastqcDir}/00_original
+
+# Run multiqc on trimmed files
+multiqc -o ${multiqcDir} -n 02_trimmed_fastq_stats_${projName} ${fastqcDir}/01_trimmed ${logsDir}/trimmingLogs
+
+# Get mapping stats and run multiqc on mapping logs
+bamdir="${projDir}/bams/trimmed"
+ls ${bamdir}/*.bam | parallel --progress --eta -j 16 "samtools stats -@ 32 {} > {.}_mapping.logs"
+mappingLogsDir="${projDir}/logs/mappingLogs"; mkdir -p ${mappingLogsDir}; mv ${bamdir}/*.logs ${mappingLogsDir}
+multiqc -o ${multiqcDir} -n 03_mapping_stats_${projName} ${mappingLogsDir}
+
+# Convert bam to bigwig using deeptools bamCoverage
+# https://deeptools.readthedocs.io/en/latest/content/feature/effectiveGenomeSize.html
+bigwigdir="${projDir}/bigwig"; mkdir -p ${bigwigdir}
+effectiveGenomeSize=2652783500 # for mm10
+for f in ${bamdir}/*_rmdup.bam; do echo ${f}; bname=$(basename ${f} .bam); bamCoverage -b ${f} -o ${bigwigdir}/${bname}_SeqDepthNorm.bw --binSize 50 --normalizeUsing RPGC --effectiveGenomeSize ${effectiveGenomeSize} --ignoreForNormalization chrX --extendReads -p 64; echo ""; done;
+
+# Get peaks and homer annotation
+peaksdir="${projDir}/peaks"
+scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
+mkdir -p ${scriptsdir}
+for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
+cmd="parallel --tmpdir ${projDir} ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
 
 ############################################################################################
 # 2.3) For myeloid mouse cell lines
