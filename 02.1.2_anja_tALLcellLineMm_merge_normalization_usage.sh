@@ -1,21 +1,35 @@
 # pwd
 cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
-# Get analysis dirs
-mkdir -p /media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis
+jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+species="mm10"
+user="anja"
+projName="tALLcellLineMm"
+
+# Get relevant directories
+projDir="/media/rad/HDD1/atacseq/${user}/${projName}"
+peaksdir="${projDir}/peaks"
+analysisDir="${projDir}/analysis/mergedReps"; mkdir -p ${analysisDir}
+peakFilesDir="${analysisDir}/broadPeaks"; mkdir -p ${peakFilesDir}
+
+# Copy broad peaks into a separate directory
+cp -rv ${peaksdir}/*/macs2peaks/*.broadPeak ${peakFilesDir}
+
+# Get the peak filenames in a file
+ls ${peakFilesDir}/* > ${analysisDir}/peaksFileList.txt
 
 # Get merged peaks
-# Modify the peaks list and output file in the megrePeaks.sh file at the begining
-# List of summit.bed is in array in the mergePeaks.sh script
-bash scripts/mergePeaks.sh 
+mergedPeaksBed="${analysisDir}/${projName}_$(basename ${analysisDir})_all_merge_master_peaks.bed"
+bash scripts/mergePeaks.sh ${analysisDir}/peaksFileList.txt ${mergedPeaksBed}
 
 # Get the tab seaprated raw counts of the merged peaks for all the samples
 # Using deeptools
-multiBamSummary BED-file --BED /media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks.bed --bamfiles /media/rad/HDD1/atacseq/anja/tALLcellLineMm/bams/trimmed/*.bam --smartLabels -out /media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.npz --outRawCounts /media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.tab -p 64
+rawCountsBname="${analysisDir}/$(basename ${mergedPeaksBed} .bed)_rawCounts"
+multiBamSummary BED-file --BED ${mergedPeaksBed} --bamfiles ${projDir}/bams/trimmed/*.bam --smartLabels -out ${rawCountsBname}.npz --outRawCounts ${rawCountsBname}.tab -p 64
 
 # Sort the input file with the header line intact
-infile="/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.tab"
-(head -n 1 ${infile} && tail -n +2 ${infile} | sort -k1,1V -k2,2g -k3,3g) > ${infile}.tmp && mv ${infile}.tmp ${infile}
+rawCountsTabFile="${rawCountsBname}.tab"
+(head -n 1 ${rawCountsTabFile} && tail -n +2 ${rawCountsTabFile} | sort -k1,1V -k2,2g -k3,3g) > ${rawCountsTabFile}.tmp && mv ${rawCountsTabFile}.tmp ${rawCountsTabFile}
 
 # Add peaknames to the file
 ipython
@@ -28,9 +42,9 @@ pd.set_option('display.max_rows', 5)
 pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
-input_file  = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.tab"
-outtxt_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt"
-outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
+input_file  = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.tab"
+outtxt_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt"
+outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
 
 # # Read the input file
 # start_time = time.time()
@@ -71,14 +85,11 @@ peaksDF.to_csv(outmat_file, index=False, header=True, sep="\t", float_format='%.
 
 ############# Annotation Matrix File #############
 # Create binary peaks flag annotation matrix
-peaksTxtFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt'
-peaksBedFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks.bed'
-peaksAnnFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
-peakFilesDir='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/broadPeaks'
+peaksTxtFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt'
+peaksBedFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks.bed'
+peaksAnnFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
+peakFilesDir='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/broadPeaks'
 tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
-
-# #  Copy peaks file
-# cp -rv /media/rad/HDD1/atacseq/christine/AGRad_ATACseq_MUC001/peaks/*/macs2peaks/*.broadPeak ${peakFilesDir}
 
 # Get the bed file
 cut -f1-4 ${peaksTxtFile} | sed '1d' > ${peaksBedFile}
@@ -127,8 +138,8 @@ txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene
 # Annotate each sample peaks with ChIPseeker
 # Read bed file
 cat("\n\t- Reading the bed file\n")
-inputfile  <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
-outputfile <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_annotation.txt'
+inputfile  <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
+outputfile <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.txt'
 
 origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
 peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
@@ -211,8 +222,8 @@ cat(paste0("\t- ",outputfile,"\n"))
 # Normalize raw matrix with vst
 R
 suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=TRUE))
-inputFile  <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
-outputFile <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.matrix"
+inputFile  <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
+outputFile <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.matrix"
 
 # Import data from featureCounts
 countdata <- read.table(inputFile, header=TRUE, row.names=1, check.names = FALSE)

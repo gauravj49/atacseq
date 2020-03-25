@@ -7,6 +7,10 @@ ls /media/nas/raw/PUB_CRCs/download_5/atacPE/*.gz | parallel --progress --eta -j
 # Rename the files with new naming convention compliance with Illumina naming convention
 # Naming convention: ExperimentInfo_Species_SeqProtocol_SeqType_Read
 # 1) Experiment info: ExperimentName-CellLine-SpecialCondition-ReplicateNumber
+     # ExperimentName   = Meyloid
+     # CellLine         = CMP
+     # SpecialCondition = GSM1441272
+     # ReplicateNumber  = Rep1
 # 2) Species: Human, mouse, etc.
 # 3) SeqProtocol: Rnaseq, ChIPseq etc.
 # 4) SeqType: paired end or single end
@@ -65,68 +69,6 @@ mv SPCD81_GSM2056306_mm_atacseq_R1_2.fastq.gz TransPB-CD8-BoneMarrow-Rep1_mm_ata
 mv SPCD82_GSM2056307_mm_atacseq_R1_1.fastq.gz TransPB-CD8-SinglePositive-Rep2_mm_atacseq_pe_R1.fastq.gz
 mv SPCD82_GSM2056307_mm_atacseq_R1_2.fastq.gz TransPB-CD8-SinglePositive-Rep2_mm_atacseq_pe_R2.fastq.gz
 
-# Map the samples
-jobdir='/home/rad/users/gaurav/projects/seqAnalysis/atacseq'
-species="mm10"
-user="anja"
-projName="tALLcellLineMm"
-projDir="/media/rad/HDD1/atacseq/anja/tALLcellLineMm"
-fastqdir="${projDir}/fastq/pe"
-bamdir="${projDir}/bams/trimmed"; mkdir -p ${bamdir}
-bigwigdir="${bamdir}/bigwig"; mkdir -p ${bigwigdir}
-scriptsdir="${jobdir}/scripts/01_map_fastQ_bowtie2/${projName}"
-multiqcDir="${projDir}/qc/multiqc"; mkdir -p ${multiqcDir}
-fastqcDir="${projDir}/qc/fastqc"; mkdir -p ${fastqcDir}
-logsDir="${projDir}/logs"; mkdir -p ${logsDir}
 
-bash scripts/01_map_pairedendFastQ_bowtie2.sh ${fastqdir} ${projDir} ${projName} ${species}
-cmd="parallel ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
-
-# Convert bam to bigwig using deeptools bamCoverage
-# https://deeptools.readthedocs.io/en/latest/content/feature/effectiveGenomeSize.html
-effectiveGenomeSize=2652783500 # for mm10
-for f in ${bamdir}/*_rmdup.bam; 
-do
-  echo ${f}; 
-  bname=$(basename ${f} .bam); 
-  # bamCoverage -b ${f} -o ${bigwigdir}/${bname}.bw -p 64; 
-  bamCoverage -b ${f} -o ${bigwigdir}/${bname}_SeqDepthNorm.bw --binSize 50 --normalizeUsing RPGC --effectiveGenomeSize ${effectiveGenomeSize} --ignoreForNormalization chrX --extendReads -p 64
-  echo ""; 
-done
-
-
-
-# Get peaks and homer annotation
-jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
-species="mm10"
-user="anja"
-projName="tALLcellLineMm"
-projDir="/media/rad/HDD1/atacseq/anja/tALLcellLineMm"
-fastqdir="${projDir}/fastq/pe"
-mappingDir="${projDir}/mapping"
-bamdir="${projDir}/bams/trimmed"
-peaksdir="${projDir}/peaks"
-scriptsdir="${jobdir}/scripts/02_peakCallingMACs_annotationHomer/${projName}"
-mkdir -p ${scriptsdir} ${bam} ${peaksdir}
-for b in ${bamdir}/*.bam; do bash scripts/02_peakCallingMACS2_annotationHomer.sh ${b} ${peaksdir} ${species} ${projName}; done;
-cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*.sh; do chmod 775 ${s}; cmd=$(echo "${cmd} ${s}"); done; eval ${cmd}
-
-# Run multiqc on mapped data and peaks
-multiqc -o ${multiqcDir} -n ${projName}_stats ${projDir}
-
-# 4) Convert bam to bigwig using deeptools bamCoverage
-bigwigdir="/media/rad/HDD1/temp_chip/snailchipP1/bigwig"; mkdir -p ${bigwigdir}
-for f in /media/rad/HDD1/temp_chip/snailchipP1/mapping/*_rmdup.bam;
-do
- echo ${f}
- bname=$(basename ${f} .bam)
- bamCoverage -b ${f} -o ${bigwigdir}/${bname}.bw -p 64
- echo ""
-done
-
-
-
-# ExperimentName=Meyloid
-# CellLine=CMP
-# SpecialCondition=GSM1441272
-# ReplicateNumber=Rep1
+# Change filenames to new file convetion after merging the replicates
+# /home/rad/users/gaurav/projects/seqAnalysis/atacseq/docs/tALLcellLineMm_merge_rename.txt
