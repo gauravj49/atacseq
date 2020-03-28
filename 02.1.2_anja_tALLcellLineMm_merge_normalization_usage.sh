@@ -42,9 +42,9 @@ pd.set_option('display.max_rows', 5)
 pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
-input_file  = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.tab"
-outtxt_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt"
-outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
+input_file  = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedReps_all_merge_master_peaks_rawCounts.tab"
+outtxt_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.txt"
+outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.matrix"
 
 # # Read the input file
 # start_time = time.time()
@@ -61,7 +61,7 @@ outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/t
 start_time = time.time()
 peaksDF = pd.read_csv(input_file, sep="\t")
 print("%s seconds" % (time.time() - start_time))
-# 6.941580533981323 seconds
+# 5.381994962692261 seconds
 
 # Fix column names: From #chr to chr and remove <'>
 peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_atacseq_mm_se_rmdup", '')
@@ -85,9 +85,9 @@ peaksDF.to_csv(outmat_file, index=False, header=True, sep="\t", float_format='%.
 
 ############# Annotation Matrix File #############
 # Create binary peaks flag annotation matrix
-peaksTxtFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.txt'
-peaksBedFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks.bed'
-peaksAnnFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
+peaksTxtFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.txt'
+peaksBedFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks.bed'
+peaksAnnFile='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_annotation.tab'
 peakFilesDir='/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/broadPeaks'
 tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
 
@@ -138,15 +138,14 @@ txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene
 # Annotate each sample peaks with ChIPseeker
 # Read bed file
 cat("\n\t- Reading the bed file\n")
-inputfile  <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.tab'
-outputfile <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_annotation.txt'
+inputfile  <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_annotation.tab'
+outputfile <- '/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_annotation.txt'
 
 origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
 peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
 
 origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
 peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
-# peaksBed <- readGeneric(origPeakDT,chr=1,start=2,end=3,strand=NULL)
 
 # Annotate regions
 cat("\n\t- Annotate regions\n")
@@ -222,14 +221,41 @@ cat(paste0("\t- ",outputfile,"\n"))
 # Normalize raw matrix with vst
 R
 suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=TRUE))
-inputFile  <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_rawCounts.matrix"
-outputFile <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.matrix"
+suppressPackageStartupMessages(library("data.table", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("splitstackshape", warn.conflicts=FALSE, quietly=TRUE))
+
+inputFile  <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.matrix"
+outputFile <- "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_vstCounts.matrix"
 
 # Import data from featureCounts
-countdata <- read.table(inputFile, header=TRUE, row.names=1, check.names = FALSE)
-coldata   <- data.frame(row.names=colnames(countdata), samples=colnames(countdata))
-dds       <- DESeqDataSetFromMatrix(countData=countdata, design=~1, colData=coldata)
+countdata  <- read.table(inputFile, header=TRUE, row.names=1, check.names = FALSE)
 
+# Create the sampletable from the column names
+targetsDT <- data.table(colnames(countdata))
+SampleTable <- cSplit(targetsDT, 'V1','_', drop=F)
+
+# Create new column batch column
+batches    <- c(1,1,2,2,1,1,2,2,3,3,2,2,2,1)
+SampleTable$batches <- batches
+
+# Rename V_1 column to sampleNames
+names(SampleTable)[names(SampleTable) == "V1"]   <- "sampleNames"
+
+# Drop useless columns
+SampleTable <- subset(SampleTable, select = -c(V1_1, V1_2, V1_3, V1_4, V1_5, V1_6, V1_7, V1_8, V1_9))
+
+# Get the dds object
+# coldata   <- data.frame(row.names=colnames(countdata), samples=colnames(countdata))
+# dds       <- DESeqDataSetFromMatrix(countData=countdata, design=~1, colData=coldata)
+
+# the design formula contains a numeric variable with integer values,
+# specifying a model with increasing fold change for higher values.
+# did you mean for this to be a factor? if so, first convert
+# this variable to a factor using the factor() function
+SampleTable$batches <- as.factor(SampleTable$batches)
+dds <- DESeqDataSetFromMatrix(colData  = SampleTable, countData=countdata, design = ~batches)
+
+# VST 
 vst         <- varianceStabilizingTransformation(dds, blind=TRUE)  
 vsd         <- assay(vst)
 

@@ -3,9 +3,11 @@ cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
 ############# DOCS #############
 ################################
-# Get the top 1% most varying genes and plot the pca
+# Get the top 5% most varying genes and plot the pca
 ipython
 #****************************************************************************************************
+import datatable as dt
+import scanpy as sc
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
@@ -14,8 +16,8 @@ pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
 # Input and output files
-input_file      = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.matrix"
-rankoutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.ranks"
+input_file      = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_vstCounts.matrix"
+rankoutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_vstCounts.ranks"
 read_cutoff     = 5
 sample_pc       = 75
 
@@ -40,8 +42,8 @@ peaksDF['pctRank']  = peaksDF['variance'].rank(pct=True)
 # Save the variance and ranks genes
 peaksDF[['variance','pctRank']].to_csv(rankoutput_file, index=True, header=True, sep="\t", float_format='%.2f')
 
-# Get the filtered dataframe by taking top 1% of ranked peaks
-topPeaksDF = peaksDF[peaksDF['pctRank'] >= 0.99]
+# Get the filtered dataframe by taking top 5% of ranked peaks
+topPeaksDF = peaksDF[peaksDF['pctRank'] >= 0.95]
 
 # Get the dimensions of original and top peaks df
 peaksDF.shape    # peaksDF.shape
@@ -64,51 +66,49 @@ tabPeaksDF['end']        = tabDFSlice[2]
 # Rearrange columns to new order
 tabPeaksDF.drop(columns  =['variance','pctRank'], inplace=True)
 tabPeaksDF.rename(columns={'tabDFSlice':'PeakID', 'chr':'PeakChr', 'start':'PeakStart', 'end':'PeakEnd'}, inplace=True)
-new_columns_order        = ['PeakChr', 'PeakStart', 'PeakEnd','PeakID', 'TransPB-Bcell-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-Bcell-BoneMarrow-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-CD4-SinglePositive-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-CD4-SinglePositive-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-CD8-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-CD8-SinglePositive-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-CLP-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-CLP-BoneMarrow-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-DN2a-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-DN2a-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-DN2b-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-DN2b-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-DN3-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-DN3-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-DN4-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-DN4-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-DP-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-DP-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-ETP-Tcell-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-ETP-Tcell-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-HSC-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-HSC-BoneMarrow-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-MPP-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-MPP-BoneMarrow-Rep2_mm_atacseq_pe_R1_rmdup', 'TransPB-NK-BoneMarrow-Rep1_mm_atacseq_pe_R1_rmdup', 'TransPB-NK-BoneMarrow-Rep2_mm_atacseq_pe_R1_rmdup',]
+new_columns_order        = ['PeakChr', 'PeakStart', 'PeakEnd','PeakID', 'TransPB_20191011072548_P00000011_DN3-Tcell_mmu_atacseq_pe_R1_rmdup','TransPB_20191011090063_P00000011_DN4-Tcell_mmu_atacseq_pe_R1_rmdup','TransPB_20191011097119_P00000011_NK-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011108131_P00000011_CLP-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011114671_P00000011_DN2a-Tcell_mmu_atacseq_pe_R1_rmdup','TransPB_20191011114755_P00000011_ETP-Tcell_mmu_atacseq_pe_R1_rmdup','TransPB_20191011114931_P00000011_MPP-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011114994_P00000011_HSC-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011125071_P00000011_DP-Tcell_mmu_atacseq_pe_R1_rmdup','TransPB_20191011137800_P00000011_CD8-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011141045_P00000011_Bcell-BoneMarrow_mmu_atacseq_pe_R1_rmdup','TransPB_20191011142220_P00000011_CD4-SinglePositive_mmu_atacseq_pe_R1_rmdup','TransPB_20191011143412_P00000011_CD8-SinglePositive_mmu_atacseq_pe_R1_rmdup','TransPB_20191011143464_P00000011_DN2b-Tcell_mmu_atacseq_pe_R1_rmdup']
 tabPeaksDF               = tabPeaksDF[new_columns_order]
 
 # Save the DF as tab separated file
-taboutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts.tab"
+taboutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_vstCounts.tab"
 tabPeaksDF.to_csv(taboutput_file, sep='\t', index = False, float_format='%.2g')
 
-# Save the top1pcDF as tab separated file
+# Save the top5pcDF as tab separated file
 tabPeaksDF.set_index('PeakID', inplace=True)
 tabPeaksDF['PeakID'] = tabPeaksDF.index
 bedPeaksDF = tabPeaksDF.iloc[:,:4].copy()
 #default inner join
-top1pcbedDF = pd.merge(bedPeaksDF, topPeaksDF, left_index=True, right_index=True)
+top5pcbedDF = pd.merge(bedPeaksDF, topPeaksDF, left_index=True, right_index=True)
 
-top1pctaboutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/cis/tALLcellLineMm_cis_all_merge_master_peaks_vstCounts_top1pc.tab"
-tabPeaksDF.to_csv(top1pctaboutput_file, sep='\t', index = False, float_format='%.2g')
-
-
+top5pctaboutput_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_vstCounts_top5pc.tab"
+tabPeaksDF.to_csv(top5pctaboutput_file, sep='\t', index = False, float_format='%.2g')
 
 # Principal component analysis
-features = topPeaksDF.columns.tolist()
-x        = topPeaksDF.T
 # Standardize the Data: Since PCA yields a feature subspace that maximizes the variance along the axes, 
 # it makes sense to standardize the data, especially, if it was measured on different scales. 
 # x = StandardScaler().fit_transform(x)
-
-# PCA Projection to 2D
+x      = topPeaksDF.T
 pca   = PCA(n_components=5)
 pcs   = pca.fit_transform(x)
 pcaDF = pd.DataFrame(data = pcs, columns = ['PC1', 'PC2','PC3', 'PC4','PC5'])
 
+# Add index to pcaDF
+pcaDF['pcaIndex'] = topPeaksDF.columns.tolist()
+
 # Add the cellLines information
+# TransPB_20191011072548_P00000011_DN3-Tcell_mmu_atacseq_pe_R1_rmdup
+features = [f.split("_")[3] for f in topPeaksDF.columns.tolist()]
 pcaDF = pd.concat([pcaDF, pd.DataFrame(data=features, columns=['CellLines'])], axis = 1)
 
-# # Add batch information
-# pcaDF['batch'] = sum([['B1'] * 8,['B2'] * 10,['B3'] * 15], [])
+# Add batch information
+pcaDF['batch'] = [1,1,2,2,1,1,2,2,3,3,2,2,2,1]
 # pcaDF = pd.concat([pcaDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
 
 # Add groups information
 # https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
-pcaDF['timeline'] = pcaDF["CellLines"].str.split("_", n = 2, expand = True)[0].str.replace('TransPB-', '') # Bcell-BoneMarrow-Rep1
-pcaDF.set_index('CellLines', inplace=True)
+pcaDF.set_index('pcaIndex', inplace=True)
 pcaDF = pd.concat([pcaDF,librarySizeDF], axis=1)
 pcaDF.rename(columns={0:'LibrarySize'}, inplace=True)
-pcaDF['CellLines'] = pcaDF.index
 pcaDF['sno'] = np.arange(len(pcaDF)) + 1
 n = pcaDF['sno'].tolist()
 
@@ -143,14 +143,14 @@ plt.close('all')
 filled_markers = ('o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd', 'P', 'X')
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1) 
-# g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', style='timeline', size='CellLines', markers=filled_markers)
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', size='CellLines', markers=filled_markers)
+# g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', style='batch', size='CellLines', markers=filled_markers)
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='CellLines', style='batch', size='CellLines', markers=filled_markers)
 box = g.axes.get_position() # get position of figure
 g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
 g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
 ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
 ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+ax.set_title('Top 5% variance ranked peaks PCA', fontsize = 20)
 pcaPlotPdf = "{0}_PCA_plot.pdf".format(get_file_info(input_file)[3])
 plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
 # plt.show()
@@ -158,70 +158,80 @@ plt.close('all')
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1) 
-# g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=200, size='LibrarySize')
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=200)
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='batch', s=200, size='LibrarySize')
+# g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='batch', s=200)
 box = g.axes.get_position() # get position of figure
 g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
 g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
 ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
 ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
-pcaPlotPdf = "{0}_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
+ax.set_title('Top 5% variance ranked peaks PCA', fontsize = 20)
+pcaPlotPdf = "{0}_batch_PCA_plot.pdf".format(get_file_info(input_file)[3])
 plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
 # plt.show()
 plt.close('all')
-
-
 
 # UMAP
 import umap
 reducer   = umap.UMAP(n_components=5)
 embedding = reducer.fit_transform(topPeaksDF.T)
-umapDF = pd.DataFrame(data = embedding, columns = ['UMap1', 'UMap2','UMap3', 'UMap4','UMap5'])
-timeline = [x.split('_')[0].replace('TransPB-', '') for x in features]
-umapDF = pd.concat([umapDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
-g = sns.scatterplot(x='UMap1', y='UMap2', data=umapDF, hue='timeline', s=100, alpha=0.8, palette='viridis')
+umapDF = pd.DataFrame(data = embedding, columns = ['UMAP1', 'UMAP2','UMAP3', 'UMAP4','UMAP5'])
+# Add index to umapDF
+umapDF['pcaIndex'] = topPeaksDF.columns.tolist()
+# Add the cellLines information
+features = [f.split("_")[3] for f in topPeaksDF.columns.tolist()]
+umapDF = pd.concat([umapDF, pd.DataFrame(data=features, columns=['CellLines'])], axis = 1)
+# Add batch information
+umapDF['batch'] = [1,1,2,2,1,1,2,2,3,3,2,2,2,1]
+# umapDF = pd.concat([umapDF, pd.DataFrame(data=timeline, columns=['timeline'])], axis = 1)
+# Add groups information
+umapDF.set_index('pcaIndex', inplace=True)
+umapDF = pd.concat([umapDF,librarySizeDF], axis=1)
+umapDF.rename(columns={0:'LibrarySize'}, inplace=True)
+umapDF['sno'] = np.arange(len(umapDF)) + 1
+n = umapDF['sno'].tolist()
+
+# g = sns.scatterplot(x='UMAP1', y='UMAP2', data=umapDF, hue='CellLines', s=100, alpha=0.8, palette='viridis')
+fig, ax = plt.subplots(1, figsize=(14, 10))
+g = sns.scatterplot(x='UMAP1', y='UMAP2', data=umapDF, style='CellLines', hue='CellLines', palette=sns.color_palette("hls",umapDF.shape[0]), s=100, edgecolor='k', linewidth=0.05, alpha=0.9, markers=filled_markers)
+g.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), ncol=1)
 plt.gca().set_aspect('equal', 'datalim')
-plt.gca().set_title('UMAP projection of Top 1% variance ranked peaks', fontsize = 20)
-umapPlotPdf = "{0}_timeline_UMAP_plot.pdf".format(get_file_info(input_file)[3])
+plt.gca().set_title('UMAP projection of Top 5% variance ranked peaks', fontsize = 20)
+umapPlotPdf = "{0}_CellLines_UMAP_plot.pdf".format(get_file_info(input_file)[3])
+plt.tight_layout()
 plt.savefig(umapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
-# Generate the heatmap of top 1% varied peaks
+# Generate the heatmap of top 5% varied peaks
 sns.set(font_scale=0.5)
 h = sns.clustermap(topPeaksDF,z_score=0,cmap=sns.diverging_palette(220, 20, n=7),figsize=(10, 20)); 
 h.ax_heatmap.set_xticklabels(h.ax_heatmap.get_xmajorticklabels(), fontsize = 10)
 # plt.show()
-heatmapPlotPdf = "{0}_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_top5pc_heatmap.pdf".format(get_file_info(input_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
-# Generate the sample correlation heatmap from top 1% varied peaks
+# Generate the sample correlation heatmap from top 5% varied peaks
 # sns.set(font_scale=0.5)
 h = sns.clustermap(topPeaksDF.corr(),figsize=(10, 10),cmap='gist_heat_r', vmax=1.1, vmin=-0.1)
 # plt.show()
-heatmapPlotPdf = "{0}_sampleCorrelation_top1pc_heatmap.pdf".format(get_file_info(input_file)[3])
+heatmapPlotPdf = "{0}_sampleCorrelation_top5pc_heatmap.pdf".format(get_file_info(input_file)[3])
 plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
 plt.close('all')
 
-# Generate PCA with 
-def label_point(x, y, val, ax):
-    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
-    for i, point in a.iterrows():
-        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
-        
+
 fig = plt.figure(figsize=(20,15))
 ax = fig.add_subplot(1,1,1)
-g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='timeline', s=200)
+g = sns.scatterplot(x='PC1', y='PC2', data=pcaDF, hue='batch', s=200)
 box = g.axes.get_position() # get position of figure
 g.axes.set_position([box.x0, box.y0, box.width , box.height* 0.85]) # resize position
 g.axes.legend(loc='center right', bbox_to_anchor=(1.10,1.10), ncol=4, prop={'size': 6})# Put a legend at the top
 ax.set_xlabel('PC1 ({0:.2f}%)'.format(pca.explained_variance_ratio_[0]*100), fontsize = 15)
 ax.set_ylabel('PC2 ({0:.2f}%)'.format(pca.explained_variance_ratio_[1]*100), fontsize = 15)
-ax.set_title('Top 1% variance ranked peaks PCA', fontsize = 20)
+ax.set_title('Top 5% variance ranked peaks PCA', fontsize = 20)
 ax=plt.gca()
 label_point(pcaDF.PC1, pcaDF.PC2, pcaDF.sno, ax) 
-pcaPlotPdf = "{0}_annotated_timeline_PCA_plot.pdf".format(get_file_info(input_file)[3])
+pcaPlotPdf = "{0}_annotated_batch_PCA_plot.pdf".format(get_file_info(input_file)[3])
 plt.savefig(pcaPlotPdf,bbox_inches = 'tight')
 # plt.show()
 plt.close('all')
@@ -231,6 +241,12 @@ pcaCellLinesFile = "{0}_annotated_groups_PCA.txt".format(get_file_info(input_fil
 pcaDF[['sno','CellLines']].to_csv(pcaCellLinesFile, sep="\t", index=None)
 
 ####################### USER DEFINIED FUNCTIONS ###########################
+# Generate PCA with 
+def label_point(x, y, val, ax):
+    a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
+    for i, point in a.iterrows():
+        ax.text(point['x']+.05, point['y']+0.5, str(int(point['val'])))
+
 def show_values_on_bars(axs, h_v="v", space=0.4):
         '''https://stackoverflow.com/questions/43214978/seaborn-barplot-displaying-values'''
         def _show_on_single_plot(ax):
