@@ -1,7 +1,7 @@
 #!/usr/local/bin/python	
 """	
 ***********************************************	
-- PROGRAM: annotate_variant_bash_wrapper.py	
+- PROGRAM: customFeatureHeatmap.py	
 - CONTACT: Gaurav Jain(gaurav.jain@tum.de)	
 ***********************************************	
 """	
