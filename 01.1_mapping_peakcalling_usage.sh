@@ -145,7 +145,8 @@ cmd="parallel --tmpdir /media/rad/SSD1/atac_temp ::: "; for s in ${scriptsdir}/*
 jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
 species="mm10"
 user="anja"
-projName="tALLcellLineMm"
+# projName="tALLcellLineMm"
+projName="rep_tALLcellLineMm"
 
 projDir="/media/rad/HDD1/atacseq/${user}/${projName}"
 fastqdir="${projDir}/fastq"
