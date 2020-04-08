@@ -7,39 +7,13 @@
 """	
 
 def main():	
-  # cisType     = "ETP_Class_small"
-  # cisPeaksDir = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/cisPeaks"
-  # output_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/{}Reads.txt".format(cisType)
-
-  # # Create a meta log file
-  # metaLogFile = "{0}/logs/{1}_meta.log".format(cisDir, cisType); create_dir("{0}/logs".format(cisDir))
-
-  # # Log everything in the meta log file
-  # # https://serverfault.com/questions/103501/how-can-i-fully-log-all-bash-scripts-actions
-  # # Explanation:
-  # # 1.  exec 3>&1 4>&2
-  # #     Saves file descriptors so they can be restored to whatever they were before redirection 
-  # #     or used themselves to output to whatever they were before the following redirect.
-  # # 2.  trap 'exec 2>&4 1>&3' 0 1 2 3
-  # #     Restore file descriptors for particular signals. Not generally necessary since they should 
-  # #     be restored when the sub-shell exits.
-  # # 3.  exec 1>log.out 2>&1
-  # #     Redirect stdout to file log.out then redirect stderr to stdout. Note that the order is 
-  # #     important when you want them going to the same file. stdout must be redirected before stderr is redirected to stdout.
-
-  # ofile.write("#!/bin/bash\n\nexec 3>&1 4>&2\ntrap 'exec 2>&4 1>&3' 0 1 2 3\nexec 1> {} 2>&1\n".format(metaLogFile))
-  # # Everything below will go to the log file
-
-  # pyVersion = os.system("python -VV")
-  # ofile.write("\n########################################\n# Log file: logs/{0}_meta.log\n{1}\n########################################\n".format(sampleName, pyVersion))
   print(os.system("python -VV"))
-
-  # cisType     = "ETP_Class_small"
-  # cisPeaksDir = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/cisPeaks"
-  # output_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/{}Reads.txt".format(cisType)
+  # feature_name     = "ETP_Class_small"
+  # input_dir = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/cisPeaks"
+  # output_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/cis/{}Reads.txt".format(feature_name)
 
   # Read and merge into df
-  pkDF = pd.concat([pd.read_csv(f, sep='\t').set_index(['chr', 'start', 'end','name']) for f in glob.glob("{0}/*{1}_peaks_mean.bed".format(cisPeaksDir, cisType))],axis=1).reset_index()
+  pkDF = pd.concat([pd.read_csv(f, sep='\t').set_index(['chr', 'start', 'end','name']) for f in glob.glob("{0}/*{1}_peaks_mean.bed".format(input_dir, feature_name))],axis=1).reset_index()
   pkDF.replace('.',0, inplace=True)
 
   # Save to output file
@@ -76,19 +50,6 @@ def main():
   plt.savefig(heatmapPlotPdf,bbox_inches = 'tight')
   plt.close('all')
   print(heatmapPlotPdf)
-
-  # # Calculate the zscore of the dataframe
-  # # The peaksDF.apply(zscore, axis=1) returns an array 
-  # # https://stackoverflow.com/questions/35491274/pandas-split-column-of-lists-into-multiple-columns
-  # from scipy.stats import zscore
-  # peaksDF = peaksDF.astype('float')
-  # zscorePeaksDF     = pd.DataFrame(pd.DataFrame(peaksDF.apply(zscore, axis=1))[0].values.tolist(), columns=peaksDF.columns.tolist(), index=peaksDF.index)
-
-  # # Plot the heatmap for all replicates separately for all time points
-  # g = sns.clustermap(zscorePeaksDF, cmap='RdBu_r', col_cluster=False, figsize=(20,15), square=True, yticklabels=1); plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0); cax = plt.gcf().axes[-1]; cax.tick_params(labelsize=5);
-  # heatmapPlotPdf = "{0}_heatmap_zscore.pdf".format(get_file_info(output_file)[3]); plt.savefig(heatmapPlotPdf,bbox_inches = 'tight'); plt.close('all')
-  # print(heatmapPlotPdf)
-
 ################ USER DEFINED FUNCTIONS ###################	
 
 def check_options():	
@@ -108,11 +69,18 @@ def check_options():
       '''))	
 
   # Add arguments 	
-  parser.add_argument("-cd", metavar='--cisdir', help="cis directory", dest="cisDir" , type=str, required=True)	
-  parser.add_argument("-ct", metavar='--cistyp', help="type of cis"  , dest="cisType", type=str, required=True)	
-  
+  parser.add_argument("-id", metavar="--indir" , help="*Input directory containing the counts(peaks) files", dest="input_dir"  , type=str, required=True)
+  parser.add_argument("-sf", metavar="--cfile" , help="*input sample files list of counts(peaks) files separated by comma. Example: /path/a.txt,/path/b.txt", dest="sample_names_file" , type=str, required=True)
+  parser.add_argument("-of", metavar="--ofile" , help="*Output file to save the annotation and plots file", dest="output_file", type=str, required=True)
+  parser.add_argument("-ft", metavar='--ftname', help="*Name of the feature. Ex. ETPsmall or CTCFsites", dest="feature_name", type=str, required=True)
 
-  # http://thomas-cokelaer.info/blog/2014/03/python-argparse-issues-with-the-help-argument-typeerror-o-format-a-number-is-required-not-dict/	
+  parser.add_argument("-ff", metavar="--ffile" , help=" List of selected element one per line. Ex: gene names or cis sites" , dest="element_file", type=str)
+  parser.add_argument("-fl", metavar="--ftlist", help=" Comma separated list of selected elements to plot\n - (Default: [])", dest="selectedElementList" , type=str, default = list())
+  parser.add_argument("-ds", metavar="--dropsm", help=" Comma separated list of samples to drop.\n - (Default: [])" , dest="dropSamples" , type=str, default = list())
+  parser.add_argument("-mn", metavar="--vmin"  , help=" Set the min value of the heatmap colorbar. Ex: -2.5" , dest="vmin", type=str, default="")
+  parser.add_argument("-mx", metavar="--vmax"  , help=" Set the max value of the heatmap colorbar. Ex:  2.5" , dest="vmax", type=str, default="")
+  parser.add_argument('-xc', "--xclustering"   , help="if set, cluster x-rows", action='store_true', default=False)
+  parser.add_argument('-yc', "--yclustering"   , help="if set, cluster y-rows", action='store_true', default=False)
 
   # Print the help message only if no arguments are supplied	
   if len(sys.argv)==1:	
@@ -120,10 +88,10 @@ def check_options():
       sys.exit(1)	
 
   # Save the STDOUT output in a log file	
-  if parser.parse_args().cisDir:	
-      logdir="{0}/logs".format(parser.parse_args().cisDir)	
+  if parser.parse_args().input_dir:	
+      logdir="{0}/logs".format(parser.parse_args().input_dir)	
       create_dir(logdir)	
-      logfile = "{0}/{1}.log".format(logdir, parser.parse_args().cisType)	
+      logfile = "{0}/{1}.log".format(logdir, parser.parse_args().feature_name)	
   else:	
       logdir  = "{0}/logs".format(os.getcwd())	
       create_dir(logdir)	
@@ -179,12 +147,37 @@ if __name__=="__main__":
   # Get input options	
   args = check_options()	
 
-  # Store the variables
-  cisType = args.cisType
-  cisDir  = args.cisDir
+  # Get input parameters
+  input_dir         = args.input_dir.rstrip('\/')
+  sample_names_file = args.sample_names_file
+  output_file       = args.output_file
+  xclustering       = args.xclustering
+  yclustering       = args.yclustering
+  vmin              = args.vmin
+  vmax              = args.vmax
+  selected_features = args.selected_features   # Selected features like clinical features to keep
+  selected_featfile = args.selected_featfile   # Selected features in a file ... one feature per line 
+  if selected_features:
+      selected_features = selected_features.split(",")
+      if verbose:
+          print "Selected_features: "
+          for s in selected_features:
+              print "\t- {0}".format(s)
+
+  selected_features = list()
+  if selected_featfile:
+        with open(selected_featfile,'rU') as fg:
+            # head
+            # ENSMUSG00000025130
+      # ENSMUSG00000025393
+            # ....
+            selected_features = [line for line in useful_lines(fg)]
+
+  # Create output directory if not present
+  create_dir(get_file_info(output_file)[0])
 
   # User variables
-  cisPeaksDir = "{0}/cisPeaks".format(cisDir)
-  output_file = "{0}/{1}_peaks_averageReads.txt".format(cisDir, cisType)
+  # input_dir = "{0}/cisPeaks".format(input_dir)
+  # output_file = "{0}/{1}_peaks_averageReads.txt".format(input_dir, feature_name)
 
   main()
