@@ -1,7 +1,7 @@
 # pwd
 cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
-jobdir=" /home/rad/users/gaurav/projects/seqAnalysis/atacseq"
+jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
 species="mm10"
 user="anja"
 projName="tALLcellLineMm"
@@ -12,8 +12,8 @@ peaksdir="${projDir}/peaks"
 analysisDir="${projDir}/analysis/mergedReps"; mkdir -p ${analysisDir}
 peakFilesDir="${analysisDir}/broadPeaks"; mkdir -p ${peakFilesDir}
 
-# Copy broad peaks into a separate directory
-cp -rv ${peaksdir}/*/macs2peaks/*.broadPeak ${peakFilesDir}
+# Link broad peaks into a separate directory
+ln -s ${peaksdir}/*/macs2peaks/*.broadPeak ${peakFilesDir}
 
 # Get the peak filenames in a file
 ls ${peakFilesDir}/* > ${analysisDir}/peaksFileList.txt

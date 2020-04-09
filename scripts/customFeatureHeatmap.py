@@ -16,7 +16,7 @@ def main():
   pkDF = pd.concat([pd.read_csv(f, sep='\t').set_index(['chr', 'start', 'end','name']) for f in glob.glob("{0}/*{1}_peaks_mean.bed".format(input_dir, feature_name))],axis=1).reset_index()
   pkDF.replace('.',0, inplace=True)
 
-  # Save to output file
+  # Save to output file-
   pkDF.to_csv(output_file, sep='\t', index = False, float_format='%.2g')
 
   # Plot the heatmap
