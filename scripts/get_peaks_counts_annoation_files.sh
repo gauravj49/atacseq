@@ -17,19 +17,19 @@ peakFilesDir="${analysisDir}/broadPeaks"; mkdir -p ${peakFilesDir}
 # Link broad peaks into a separate directory
 ln -s ${peaksdir}/*/macs2peaks/*.broadPeak ${peakFilesDir}
 
-# # Get peaks summit for broad peaks
-# for broadpeak in ${peakFilesDir}/*.broadPeak; 
-# do 
-#  bname=$(basename ${broadpeak} _peaks.broadPeak); 
-#  echo ${bname}; 
-#  bamfile=${projDir}/bams/trimmed/${bname}.bam; 
-#  summitfile=${peaksdir}/${bname}/macs2peaks/${bname}_peaks.summit
-#  macs2 refinepeak -b ${broadpeak} -i ${bamfile} -o ${summitfile}
-#  echo ""
-# done
+# Get peaks summit for broad peaks
+for broadpeak in ${peakFilesDir}/*.broadPeak; 
+do 
+ bname=$(basename ${broadpeak} _peaks.broadPeak); 
+ echo ${bname}; 
+ bamfile=${projDir}/bams/trimmed/${bname}.bam; 
+ summitfile=${peaksdir}/${bname}/macs2peaks/${bname}_peaks.summit
+ macs2 refinepeak -b ${broadpeak} -i ${bamfile} -o ${summitfile}
+ echo ""
+done
 
-# # Link broad peaks into a separate directory
-# ln -s ${peaksdir}/*/macs2peaks/*.summit ${peakFilesDir}
+# Link broad peaks into a separate directory
+ln -s ${peaksdir}/*/macs2peaks/*.summit ${peakFilesDir}
 
 # Get the peak filenames in a file
 ls ${peakFilesDir}/* > ${analysisDir}/peaksFileList.txt
