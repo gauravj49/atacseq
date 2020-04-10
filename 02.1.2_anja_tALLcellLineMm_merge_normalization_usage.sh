@@ -31,20 +31,30 @@ multiBamSummary BED-file --BED ${mergedPeaksBed} --bamfiles ${projDir}/bams/trim
 rawCountsTabFile="${rawCountsBname}.tab"
 (head -n 1 ${rawCountsTabFile} && tail -n +2 ${rawCountsTabFile} | sort -k1,1V -k2,2g -k3,3g) > ${rawCountsTabFile}.tmp && mv ${rawCountsTabFile}.tmp ${rawCountsTabFile}
 
+# Rename columns
+sed -i "s/#'chr'/'PeakChrom'/" ${rawCountsTabFile}
+sed -i "s/'start'/'PeakStart'/" ${rawCountsTabFile}
+sed -i "s/'end'/'PeakEnd'/" ${rawCountsTabFile}
+
+# Add PeakID column
+# Source for concatenating: https://unix.stackexchange.com/questions/304499/adding-column-to-a-table-by-concatenating-values-from-other-columns
+# source for line numbers: https://stackoverflow.com/questions/20752043/print-line-numbers-starting-at-zero-using-awk
+awk -vOFS="\t" '{$(NF+1)="atacPeak_"i++"_"$1"_"$2"_"$3}NR==1{$(NF)="PeakID"}1' ${rawCountsTabFile} > ${rawCountsTabFile}.tmp && mv ${rawCountsTabFile}.tmp ${rawCountsTabFile}
+
+
 # Add peaknames to the file
 ipython
 #****************************************************************************************************
 import dask.dataframe
 import datatable as dt
-
 import time
 pd.set_option('display.max_rows', 5)
 pd.set_option('display.max_columns', 8)
 pd.set_option('display.width', 1000)
 
-input_file  = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedReps_all_merge_master_peaks_rawCounts.tab"
-outtxt_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.txt"
-outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/tALLcellLineMm_mergedreps_all_merge_master_peaks_rawCounts.matrix"
+input_file  = "/media/rad/HDD1/atacseq/anja/rep_tALLcellLineMm/analysis/rep_tALLcellLineMm_analysis_consensus_peaks_rawCounts.tab"
+outtxt_file = "/media/rad/HDD1/atacseq/anja/rep_tALLcellLineMm/analysis/rep_tALLcellLineMm_analysis_consensus_peaks_rawCounts.txt"
+outmat_file = "/media/rad/HDD1/atacseq/anja/rep_tALLcellLineMm/analysis/rep_tALLcellLineMm_analysis_consensus_peaks_rawCounts.matrix"
 
 # # Read the input file
 # start_time = time.time()
@@ -52,27 +62,44 @@ outmat_file = "/media/rad/HDD1/atacseq/anja/tALLcellLineMm/analysis/mergedReps/t
 # print("%s seconds" % (time.time() - start_time))
 # # 0.0748898983001709 seconds
 
-# Header starting with # is a problem
-# start_time = time.time()
-# peaksDT = dt.fread(input_file, sep="\t", header=True, nthreads=16)
-# print("%s seconds" % (time.time() - start_time))
-# # 0.0748898983001709 seconds
-
+# Header starting with # is a problem, remove it before importing it with datatable
 start_time = time.time()
-peaksDF = pd.read_csv(input_file, sep="\t")
+peaksDT = dt.fread(input_file, sep="\t", header=True, nthreads=16, quotechar="'",)
 print("%s seconds" % (time.time() - start_time))
-# 5.381994962692261 seconds
+# 0.19596457481384277 seconds
 
-# Fix column names: From #chr to chr and remove <'>
-peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_atacseq_mm_se_rmdup", '')
+# start_time = time.time()
+# peaksDF = pd.read_csv(input_file, sep="\t")
+# print("%s seconds" % (time.time() - start_time))
+# # 45.42427349090576 seconds
+
+# # Fix column names: From #chr to chr and remove <'>
+# peaksDF.columns = peaksDF.columns.str.strip().str.replace(' ', '_').str.replace('(', '').str.replace(')', '').str.replace('#', '').str.replace("\'", '').str.replace("_atacseq_mm_se_rmdup", '')
+
 # rename the first three column from #chr to PeakChrom, start to PeakStart and end to PeakEnd
-peaksDF.rename(columns={ peaksDF.columns[0]: "PeakChrom" }, inplace = True)
-peaksDF.rename(columns={ peaksDF.columns[1]: "PeakStart" }, inplace = True)
-peaksDF.rename(columns={ peaksDF.columns[2]: "PeakEnd"   }, inplace = True)
+# peaksDF.rename(columns={ peaksDF.columns[0]: "PeakChrom" }, inplace = True)
+# peaksDF.rename(columns={ peaksDF.columns[1]: "PeakStart" }, inplace = True)
+# peaksDF.rename(columns={ peaksDF.columns[2]: "PeakEnd"   }, inplace = True)
+peaksDT.names = {'chr':"PeakChrom",'start':"PeakStart",'end':"PeakEnd"}
+
 # Add peaks names to the dataframe
 # peaksDF.insert (3, "name", ["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()])
 # peaksDF['peakID'] = peaksDF['PeakChrom'].str.cat(peaksDF['PeakStart'].apply(str), sep='_').str.cat(peaksDF['PeakEnd'].apply(str), sep='_').str.cat(peaksDF['name'], sep='_')
+
+# peaksDF.insert (3, "PeakID", peaksDF['PeakChrom'].str.cat(peaksDF['PeakStart'].apply(str), sep='_').str.cat(peaksDF['PeakEnd'].apply(str), sep='_').str.cat(["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()], sep='_'))
+
+# # peaksDT[:,'PeakID'] = peaksDT[:,peaksDT['PeakChrom'].cat(peaksDT['PeakStart'].apply(str), sep='_').cat(peaksDT['PeakEnd'].apply(str), sep='_').cat(["atacPeak_{0}".format(x) for x in peaksDT.index.tolist()], sep='_')]
+# peaksDT[:,'PeakID'] = peaksDT[:,"atacPeak_{0}_{1}_{2}".format(peaksDT[:,'PeakChrom'], peaksDT[:,'PeakStart'], peaksDT[:,'PeakEnd'])]
+# peaksDT[:,'PeakID'] = peaksDT[:,peaksDT[:,'PeakChrom'] + peaksDT[:,'PeakStart']]
+
+start_time = time.time()
+peaksDF = peaksDT.to_pandas()
+print("%s seconds" % (time.time() - start_time))
+# 1.3293664455413818 seconds
+
+# Add peaks names to the dataframe
 peaksDF.insert (3, "PeakID", peaksDF['PeakChrom'].str.cat(peaksDF['PeakStart'].apply(str), sep='_').str.cat(peaksDF['PeakEnd'].apply(str), sep='_').str.cat(["atacPeak_{0}".format(x) for x in peaksDF.index.tolist()], sep='_'))
+
 # Save the text file
 peaksDF.to_csv(outtxt_file, index=False, header=True, sep="\t", float_format='%.0f')
 
