@@ -64,8 +64,8 @@ mv SPCD41_GSM2056332_mm_atacseq_R1_1.fastq.gz TransPB-CD4-SinglePositive-Rep1_mm
 mv SPCD41_GSM2056332_mm_atacseq_R1_2.fastq.gz TransPB-CD4-SinglePositive-Rep1_mm_atacseq_pe_R2.fastq.gz
 mv SPCD42_GSM2056333_mm_atacseq_R1_1.fastq.gz TransPB-CD4-SinglePositive-Rep2_mm_atacseq_pe_R1.fastq.gz
 mv SPCD42_GSM2056333_mm_atacseq_R1_2.fastq.gz TransPB-CD4-SinglePositive-Rep2_mm_atacseq_pe_R2.fastq.gz
-mv SPCD81_GSM2056306_mm_atacseq_R1_1.fastq.gz TransPB-CD8-BoneMarrow-Rep1_mm_atacseq_pe_R1.fastq.gz
-mv SPCD81_GSM2056306_mm_atacseq_R1_2.fastq.gz TransPB-CD8-BoneMarrow-Rep1_mm_atacseq_pe_R2.fastq.gz
+mv SPCD81_GSM2056306_mm_atacseq_R1_1.fastq.gz TransPB-CD8-SinglePositive-Rep1_mm_atacseq_pe_R1.fastq.gz
+mv SPCD81_GSM2056306_mm_atacseq_R1_2.fastq.gz TransPB-CD8-SinglePositive-Rep1_mm_atacseq_pe_R2.fastq.gz
 mv SPCD82_GSM2056307_mm_atacseq_R1_1.fastq.gz TransPB-CD8-SinglePositive-Rep2_mm_atacseq_pe_R1.fastq.gz
 mv SPCD82_GSM2056307_mm_atacseq_R1_2.fastq.gz TransPB-CD8-SinglePositive-Rep2_mm_atacseq_pe_R2.fastq.gz
 
