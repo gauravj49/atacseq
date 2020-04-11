@@ -26,18 +26,20 @@ main <- function(){
 
   ################ Species AnnDBs ###############
   # Special mention: https://support.bioconductor.org/p/125609/
-  hub <- AnnotationHub()
+  # hub <- AnnotationHub()
 
   if(species == 'mouse'){
-    query(hub, c("Mus Musculus","EnsDb"))
-    txdb <- hub[['AH78811']]
+    # query(hub, c("Mus Musculus","EnsDb"))
+    # txdb <- hub[['AH78811']]
     txdb <- TxDb.Mmusculus.UCSC.mm10.ensGene
     andb <- "org.Mm.eg.db"
   }else if (species == 'human') {
-    query(hub, c("Homo sapiens","EnsDb"))
-    txdb <- hub[['AH78783']]
+    # query(hub, c("Homo sapiens","EnsDb"))
+    # txdb <- hub[['AH78783']]
+    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
     andb <- "org.Hs.eg.db"
   }
+  
   ################ Main logic ###################
   # Annotate each sample peaks with ChIPseeker
 	## Get the input data
@@ -117,7 +119,7 @@ main <- function(){
 
   # Print annotation database log information
   cat("\n\t- Annotation database log information\n")
-  print(txDb)
+  print(txdb)
 }
 
 ##################### USER DEFINIED FUNCTIONS #########################
@@ -135,6 +137,7 @@ load_libraries <- function(){
   suppressPackageStartupMessages(library(org.Mm.eg.db))
   suppressPackageStartupMessages(library(org.Hs.eg.db))
   suppressPackageStartupMessages(library(TxDb.Mmusculus.UCSC.mm10.ensGene))
+  suppressPackageStartupMessages(library(TxDb.Hsapiens.UCSC.hg38.knownGene))
 }
 
 check_options <- function(){
