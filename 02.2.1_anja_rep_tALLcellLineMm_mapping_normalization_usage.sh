@@ -7,16 +7,16 @@ user="anja"
 projName="rep_tALLcellLineMm"
 
 # Get relevant directories
+outdir="/media/rad/HDD1/atacseq"
 projDir="${outdir}/${user}/${projName}"
 peaksdir="${projDir}/peaks"
 analysisDir="${projDir}/analysis"; mkdir -p ${analysisDir}
 peakFilesDir="${analysisDir}/broadPeaks"; mkdir -p ${peakFilesDir}
 
 # Get consensus peaks, raw counts and annotation matrix for consensus peaks
-bash scripts/get_peaks_counts_annotation_files.sh 
+bash scripts/get_peaks_counts_annotation_files.sh ${species} ${user} ${projName} ${outdir} ${jobdir}
 
 #****************************************************************************************************
-
 # Normalize raw matrix with vst
 R
 suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=TRUE))
