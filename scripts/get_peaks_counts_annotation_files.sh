@@ -125,5 +125,7 @@ echo "Rscript ${jobdir}/scripts/R_annotate_peaks_chipseeker.R -if=${peaksAnnTabF
 echo "-------------------------------------------------------------------"
 Rscript ${jobdir}/scripts/R_annotate_peaks_chipseeker.R -if=${peaksAnnTabFile} -of=${peaksAnnTxtFile} -sp=${species} 2>&1 | tee -a ${annotationLogFile}
 
+# Remove the peaksAnnTabFile file as the data is there in the peaksAnnTxtFile
+rm ${peaksAnnTabFile}
 
 
