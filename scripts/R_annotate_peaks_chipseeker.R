@@ -47,9 +47,6 @@ main <- function(){
   origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
   peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
 
-  origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
-  peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
-
   # Annotate regions
   cat("\n\t- Annotate regions\n")
   peakAnno <- annotatePeak(peaksBed, tssRegion=c(-3000, 3000), TxDb=txdb, annoDb=andb)
