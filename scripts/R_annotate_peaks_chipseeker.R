@@ -45,7 +45,10 @@ main <- function(){
 	## Get the input data
 	cat("- Reading input file ...\n")
   origPeakDT <- fread(inputfile, header=TRUE, sep="\t")
-  peaksBed   <- makeGRangesFromDataFrame(as.data.frame(origPeakDT))
+  peaksBedDT <- origPeakDT[,c("PeakChrom", "PeakStart", "PeakEnd", "PeakID")]
+  # peaksBedDT[,PeakChrom := paste0('chr',PeakChrom)]
+  peaksBed   <- makeGRangesFromDataFrame(as.data.frame(peaksBedDT))
+
 
   # Annotate regions
   cat("\n\t- Annotate regions\n")
@@ -107,7 +110,7 @@ main <- function(){
   setcolorder(mergedPeaksDT, c("PeakChrom", "PeakStart", "PeakEnd", "PeakID"))
 
   # Save results in the output file
-  fwrite(mergedPeaksDT, outputfile, sep = "\t")
+  fwrite(mergedPeaksDT, outputfile, sep = "\t", quote=F)
 
   # Sort alphanumerically with PeakID
   system(paste0("sort -k1,1V -k2,2g -k3,3g ", outputfile, " -o ", outputfile))
