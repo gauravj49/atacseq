@@ -27,7 +27,7 @@ analysisDir="${projDir}/analysis"; mkdir -p ${analysisDir}
 
 # Get parsed consensus peaks bed (Atacseq peaks are broad peaks)
 echo "- Getting parsed consensus peaks bed (Atacseq peaks are broad peaks)"
-origConsBed="$(dirname ${origAnnFile})/$(basename ${origAnnFile} .boolean.annotatePeaks.txt).bed"
+origConsBed="$(dirname ${origAnnFile})/$(basename ${origAnnFile} .boolean.txt).bed"
 consensusPeaksBed="${analysisDir}/${projName}_$(basename ${analysisDir})_consensus_peaks.bed"
 awk 'BEGIN { OFS="\t" }{$3=$3 OFS $4"_"$1"_"$2"_"$3}1' ${origConsBed} | cut -f1-4,6,7 | sort -k1,1V -k2,2g > ${consensusPeaksBed}
 
@@ -47,51 +47,13 @@ sed -i "s/Chr\b/PeakChrom/" ${rawCountsTxtFile}
 sed -i "s/Start\b/PeakStart/" ${rawCountsTxtFile}
 sed -i "s/End\b/PeakEnd/" ${rawCountsTxtFile}
 sed -i "s/Geneid_Chr_Start_End\b/PeakID/" ${rawCountsTxtFile}
+sed -i 's/^/chr/' ${rawCountsTxtFile}
 
 # Get parsed boolean annotation file
 peaksAnnTabFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.tab"
-Rscript -e 'library(data.table); inputfile  <- commandArgs(TRUE)[1]; outputfile <- commandArgs(TRUE)[2]; peaksDT    <- fread(inputfile, header=TRUE, sep="\t"); dropCols   <- grep("(fc|qval|pval)$", colnames(peaksDT)); peaksDT[,(dropCols) :=NULL]; (to.replace <- names(which(sapply(peaksDT, is.logical)))); for (var in to.replace) peaksDT[, (var):= as.numeric(get(var))]; 
-peaksDT[,PeakID:=paste(interval_id,chr,start,end, sep="_")]; setnames(peaksDT, c("PeakChrom", "PeakStart", "PeakEnd","PeakID","NumPeaks","NumSamples"));fwrite(peaksDT, outputfile, sep = "\t");' ${origAnnFile} ${peaksAnnTabFile}
-
-
-############# Annotation Matrix File #############
-# Create binary peaks flag annotation matrix
-peaksBedFile="${analysisDir}/${projName}_$(basename ${analysisDir})_consensus_peaks_with_peaksID.bed"
-peaksAnnTabFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.tab"
-tempPkAnnDir="${peakFilesDir}/tempPkAnn"; mkdir -p ${tempPkAnnDir}
-
-# Get the bed file
-cut -f1-4 ${rawCountsTxtFile} | sed '1d' > ${peaksBedFile}
-colstofilter="," # Column numbers to be extracted at the end
-i=1              #
-header="PeakChrom\tPeakStart\tPeakEnd\tPeakID\t"
-for p in ${peakFilesDir}/*.broadPeak;        
-do
- bname=$(basename ${p} _peaks.broadPeak)
- outfile=${tempPkAnnDir}/${bname}.bed
- intersectBed -a ${peaksBedFile} -b ${p} -c | awk '{print $1,$2,$3,$4,$NF}' > ${outfile}
- colstofilter=$(echo "${colstofilter}$((i*5)),");
- header=$(echo -e "${header}${bname}\t")
- echo "${i}) ${bname}: ${colstofilter}"
- echo ""
- i=$((i+1));
-done
-rm ${peaksBedFile}
-
-# Remove last "," from the from the colstofilter and last tab from the header
-colstofilter=$(echo ${colstofilter}|sed 's/,$//')
-# ,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90
-
-# Paste output the file with multiple delimiters
-# Columns from one files are space separated and multiple files are separated by space
-# Using sed to convert the tabs to spaces and then using cut to get the final columns
-paste ${tempPkAnnDir}/*.bed| sed 's/\t/ /g' | cut -d ' ' --output-delimiter=$'\t' -f1-4${colstofilter}> ${peaksAnnTabFile}
-
-# Add the header to the file
-sed  -i "1i${header}" ${peaksAnnTabFile}
-
-# Removing the last tab in the header
-sed -i 's/\t$//' ${peaksAnnTabFile} 
+Rscript -e 'library(data.table); inputfile  <- commandArgs(TRUE)[1]; outputfile <- commandArgs(TRUE)[2]; peaksDT    <- fread(inputfile, header=TRUE, sep="\t"); dropCols   <- grep("(fc|qval|pval)$", colnames(peaksDT)); peaksDT[,(dropCols) :=NULL]; to.replace <- names(which(sapply(peaksDT, is.logical))); for (var in to.replace) peaksDT[, (var):= as.numeric(get(var))]; 
+peaksDT[,PeakID:=paste(interval_id,chr,start,end, sep="_")]; peaksDT[,"interval_id":=NULL]; 
+setnames(peaksDT, old = c("chr","start", "end", "num_peaks", "num_samples"), new = c("PeakChrom", "PeakStart", "PeakEnd","NumPeaks","NumSamples")); newColOrder <-  c(colnames(peaksDT)[0:3],"PeakID", colnames(peaksDT)[5:length(colnames(peaksDT))-1]); setcolorder(peaksDT, newColOrder);names(peaksDT) = gsub(pattern = ".mRp.clN.", replacement = "_", x = names(peaksDT));peaksDT[,PeakChrom := paste0("chr",PeakChrom)];fwrite(peaksDT, outputfile, sep = "\t");' ${origAnnFile} ${peaksAnnTabFile}
 
 # Add genomic annotation using chipseeker
 peaksAnnTxtFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.txt"
