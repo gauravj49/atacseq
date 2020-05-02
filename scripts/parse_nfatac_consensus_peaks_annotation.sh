@@ -1,25 +1,14 @@
 #!/bin/bash
 
-# USAGE: bash 01_map_pairedendFastQ_bowtie2.sh input/fastq/hgStomachF35 output/hgStomachF35 mm10
+# USAGE: bash scripts/parse_nfatac_consensus_peaks_annotation.sh mouse anja nfTALLMm /media/rad/HDD1/atacseq /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedLibrary/macs/broadPeak/consensus/deseq2/consensus_peaks.mLb.clN.featureCounts.txt /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedLibrary/macs/broadPeak/consensus/consensus_peaks.mLb.clN.boolean.txt /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
 species=${1:-"mouse"}
 user=${2:-"anja"}
 projName=${3:-"rep_tALLcellLineMm"}
 outdir=${4:-"/media/rad/HDD1/atacseq"}
-origConsFile=${5:-""} # /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedReplicate/macs/broadPeak/consensus/deseq2/consensus_peaks.mRp.clN.featureCounts.txt
-origAnnFile=${6:-""}  # /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedReplicate/macs/broadPeak/consensus/consensus_peaks.mRp.clN.boolean.annotatePeaks.txt
+origConsFile=${5:-""} # /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedLibrary/macs/broadPeak/consensus/deseq2/consensus_peaks.mLb.clN.featureCounts.txt
+origAnnFile=${6:-""}  # /media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedLibrary/macs/broadPeak/consensus/consensus_peaks.mLb.clN.boolean.txt
 jobdir=${7:-"/home/rad/users/gaurav/projects/seqAnalysis/atacseq"}
-
-############################
-# Remove later
-species="mouse"
-user="anja"
-projName="nfTALLMm"
-outdir="/media/rad/HDD1/atacseq"
-origConsFile="/media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedReplicate/macs/broadPeak/consensus/deseq2/consensus_peaks.mRp.clN.featureCounts.txt"
-origAnnFile="/media/rad/HDD1/atacseq/anja/nfTALLMm/results/bwa/mergedReplicate/macs/broadPeak/consensus/consensus_peaks.mRp.clN.boolean.txt"
-jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
-############################
 
 # Get relevant directories
 projDir="${outdir}/${user}/${projName}"
@@ -41,6 +30,7 @@ sed 1d ${origConsFile} | awk 'BEGIN { OFS="\t" }{$4=$4 OFS $1"_"$2"_"$3"_"$4}1' 
 
 # Remove additional characters from the header
 sed -i "s/.mLb.clN.bam//g" ${rawCountsTxtFile}
+sed -i "s/.mLb.clN.sorted.bam//g" ${rawCountsTxtFile}
 
 # Rename columns. \b is word boundary to search for full word only
 sed -i "s/Chr\b/PeakChrom/" ${rawCountsTxtFile}
@@ -48,18 +38,21 @@ sed -i "s/Start\b/PeakStart/" ${rawCountsTxtFile}
 sed -i "s/End\b/PeakEnd/" ${rawCountsTxtFile}
 sed -i "s/Geneid_Chr_Start_End\b/PeakID/" ${rawCountsTxtFile}
 sed -i 's/^/chr/' ${rawCountsTxtFile}
+sed -i 's/^/chr/' ${consensusPeaksBed}
+sed -i "s/chrPeakChrom\b/PeakChrom/" ${rawCountsTxtFile}
+sed -i "s/chrPeakChrom\b/PeakChrom/" ${consensusPeaksBed}
 
 # Get parsed boolean annotation file
 peaksAnnTabFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.tab"
 Rscript -e 'library(data.table); inputfile  <- commandArgs(TRUE)[1]; outputfile <- commandArgs(TRUE)[2]; peaksDT    <- fread(inputfile, header=TRUE, sep="\t"); dropCols   <- grep("(fc|qval|pval)$", colnames(peaksDT)); peaksDT[,(dropCols) :=NULL]; to.replace <- names(which(sapply(peaksDT, is.logical))); for (var in to.replace) peaksDT[, (var):= as.numeric(get(var))]; 
 peaksDT[,PeakID:=paste(interval_id,chr,start,end, sep="_")]; peaksDT[,"interval_id":=NULL]; 
-setnames(peaksDT, old = c("chr","start", "end", "num_peaks", "num_samples"), new = c("PeakChrom", "PeakStart", "PeakEnd","NumPeaks","NumSamples")); newColOrder <-  c(colnames(peaksDT)[0:3],"PeakID", colnames(peaksDT)[5:length(colnames(peaksDT))-1]); setcolorder(peaksDT, newColOrder);names(peaksDT) = gsub(pattern = ".mRp.clN.", replacement = "_", x = names(peaksDT));peaksDT[,PeakChrom := paste0("chr",PeakChrom)];fwrite(peaksDT, outputfile, sep = "\t");' ${origAnnFile} ${peaksAnnTabFile}
+setnames(peaksDT, old = c("chr","start", "end", "num_peaks", "num_samples"), new = c("PeakChrom", "PeakStart", "PeakEnd","NumPeaks","NumSamples")); newColOrder <-  c(colnames(peaksDT)[0:3],"PeakID", colnames(peaksDT)[5:length(colnames(peaksDT))-1]); setcolorder(peaksDT, newColOrder);names(peaksDT) = gsub(pattern = ".mLb.clN.", replacement = "_", x = names(peaksDT));peaksDT[,PeakChrom := paste0("chr",PeakChrom)];fwrite(peaksDT, outputfile, sep = "\t");' ${origAnnFile} ${peaksAnnTabFile}
 
 # Add genomic annotation using chipseeker
 peaksAnnTxtFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.txt"
 
 # Create a log file
-analysisLogDir="${projDir}/logs/analysisLogs"; mkdir -p ${analysisLogDir}
+analysisLogDir="${analysisDir}/logs/analysisLogs"; mkdir -p ${analysisLogDir}
 mkdir -p ${analysisLogDir}
 annotationLogFile="${analysisLogDir}/$(basename ${consensusPeaksBed} .bed)_annotation.log"
 
