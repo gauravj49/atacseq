@@ -10,6 +10,20 @@ origConsFile="/media/rad/HDD1/atacseq/helena/cnsTreg/results/bwa/mergedReplicate
 origAnnFile="/media/rad/HDD1/atacseq/helena/cnsTreg/results/bwa/mergedReplicate/macs/broadPeak/consensus/consensus_peaks.mRp.clN.boolean.txt"
 jobdir="/home/rad/users/gaurav/projects/seqAnalysis/atacseq"
 
-# Run the script
+# Output paramerts for downstream analysis
+projDir="${outdir}/${user}/${projName}"
+analysisDir="${projDir}/analysis"; mkdir -p ${analysisDir}
+consensusPeaksBed="${analysisDir}/${projName}_$(basename ${analysisDir})_consensus_peaks.bed"
+rawCountsTxtFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_rawCounts.txt"
+peaksAnnTxtFile="${analysisDir}/$(basename ${consensusPeaksBed} .bed)_annotation.txt"
+
+# 1) Parse concensus raw matrix and boolean matrix to get annoation files
 echo "bash scripts/parse_nfatac_consensus_peaks_annotation.sh ${species} ${user} ${projName} ${outdir} ${origConsFile} ${origAnnFile} ${jobdir}"
 bash scripts/parse_nfatac_consensus_peaks_annotation.sh ${species} ${user} ${projName} ${outdir} ${origConsFile} ${origAnnFile} ${jobdir}
+
+# Output files are:
+echo "- Consensus bed file: ${consensusPeaksBed}"
+echo "- Raw peaks count   : ${rawCountsTxtFile}"
+echo "- Peaks annotation  : ${peaksAnnTxtFile}"
+
+# 2) Normalize raw matrix with vst
