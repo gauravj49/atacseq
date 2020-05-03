@@ -32,48 +32,45 @@ suppressPackageStartupMessages(library("DESeq2", warn.conflicts=FALSE, quietly=T
 suppressPackageStartupMessages(library("data.table", warn.conflicts=FALSE, quietly=TRUE))
 suppressPackageStartupMessages(library("splitstackshape", warn.conflicts=FALSE, quietly=TRUE))
 suppressPackageStartupMessages(library("dplyr", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("ggplot2", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("reshape2", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("pander", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library("Hmisc", warn.conflicts=FALSE, quietly=TRUE))
+suppressPackageStartupMessages(library(RColorBrewer, warn.conflicts=FALSE, quietly=TRUE))
 
 inputFile  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_analysis_consensus_peaks_rawCounts.txt"
+annotFile  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_sample_annotation.txt"
 outputFile <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_analysis_consensus_peaks_vstCounts.txt"
 
 # Import data from featureCounts
-countdata  <- fread(inputFile, header=TRUE)
+countdata   <- fread(inputFile, header=TRUE)
+sampleTable <- fread(annotFile, header=TRUE)
 
-# Subset genomic annoations from the counts DT
-annotDT <- countdata[, c('PeakChrom','PeakStart','PeakEnd','PeakID')]
+# Filter out peaks where not a single sample has more than 50 reads.
+countdata = countdata[apply(countdata[,5:ncol(countdata)], 1, max) > 50,]
+
+# Subset genomic ranges from the counts DT
+grangesDT  <- countdata[, c('PeakChrom','PeakStart','PeakEnd','PeakID')]
+# Filter out peaks where not a single sample has more than 50 reads.
+grangesDT <- grangesDT[apply(countdata[,4:ncol(countdata)], 1, max) > 50,]
 
 # Remove PeakChrom PeakStart  PeakEnd columns
-countdata[, c('PeakChrom','PeakStart','PeakEnd','PeakID'):=NULL]  
-
-# Create the sampletable from the column names
-targetsDT <- data.table(colnames(countdata))
-# SampleTable <- cSplit(targetsDT, 'V1','_', drop=F)
-SampleTable <- targetsDT
-
-# Create new column batch column
-batches    <- c(2,1,1,2,2,2,1,2,1,2,3,1,1,1,2,1,1,2,3,1,1,2,1,2,1,1)
-SampleTable$batches <- batches
-
-# Rename V1 column to sampleNames
-names(SampleTable)[names(SampleTable) == "V1"]   <- "sampleNames"
-
-# # Drop useless columns
-# SampleTable <- subset(SampleTable, select = -c(V1_2, V1_3, V1_4, V1_5, V1_6))
+countdata[, c('PeakChrom','PeakStart','PeakEnd','PeakID'):=NULL]
 
 # Get the dds object
 # the design formula contains a numeric variable with integer values,
 # specifying a model with increasing fold change for higher values.
 # did you mean for this to be a factor? if so, first convert
 # this variable to a factor using the factor() function
-SampleTable$batches <- as.factor(SampleTable$batches)
-dds <- DESeqDataSetFromMatrix(colData  = SampleTable, countData=countdata, design = ~batches)
+sampleTable$Study <- as.factor(sampleTable$Study)
+dds <- DESeqDataSetFromMatrix(colData  = sampleTable, countData=countdata, design =~Study)
 
 # VST 
-vst      <- varianceStabilizingTransformation(dds, blind=TRUE)  
+vst      <- varianceStabilizingTransformation(dds, blind=FALSE)  
 vsd      <- assay(vst)
 
-# Add the genomic annotation in base R
-vstBindDT <- cbind(annotDT, vsd)
+# Add the genomic ranges in base R
+vstBindDT <- cbind(grangesDT, vsd)
 
 # Round all normalized counts to 4 decimal places
 vstOutDT  <- data.table(vstBindDT %>% mutate_at(vars(-PeakChrom,-PeakStart,-PeakEnd,-PeakID), funs(round(., 4))))
@@ -81,6 +78,64 @@ vstOutDT  <- data.table(vstBindDT %>% mutate_at(vars(-PeakChrom,-PeakStart,-Peak
 # Save the counts file to output csv file
 fwrite(vstOutDT   , file = outputFile , sep = '\t', quote = F)
 
+# PCA
+pca = prcomp(t(vsd))
+print(summary(pca))
+pcaData = as.data.frame(pca$x)
+pcaData$sample=rownames(pcaData)
+si <- as.data.frame(sampleTable)
+rownames(si) <- si$SampleName; si$SampleName <- NULL
+pcaData=merge(pcaData, si, by.x=0, by.y=0)
+percentVar = round(100 * (pca$sdev^2 / sum( pca$sdev^2 ) ))
+p=ggplot(data=pcaData, aes(x = PC1, y = PC2, group=CellLine)) + geom_point(aes(size=3, shape=Study, color=CellLine))
+p=p+xlab(paste0("PC1: ", percentVar[1], "% variance"))
+p=p+ylab(paste0("PC2: ", percentVar[2], "% variance"))
+normPlotPDF  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_vst_norm_PCA.pdf"
+ggsave(normPlotPDF, width=15)
+
+# Data visualization of normalized counts
+lf = melt(vsd, id.vars=c())
+pander(head(lf))
+pg1 <- ggplot(data=lf, aes(x=Var2, y=value)) + geom_boxplot(aes(group=Var2)) + xlab("SampleName") + ylab("Normalized Count") + coord_flip()
+normPlotPDF  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_vst_sample_boxplot.pdf"
+ggsave(normPlotPDF)
+pg2 <- ggplot(data=lf, aes(x=value, after_stat(density))) + geom_freqpoly(aes(group=Var2, color=Var2), bins=30) + xlab("Normalized Count") + ylab("density")
+normPlotPDF  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_vst_normalization.pdf"
+ggsave(normPlotPDF, width=15)
+
+# Sample cluster dendrogram
+hclustPlotPDF  <- "/media/rad/HDD1/atacseq/anja/nfTALLMm/analysis/nfTALLMm_vst_sample_hclust_dendrogram.pdf"
+dists          <- dist(t(assay(vst)))
+pdf(hclustPlotPDF); par(mar=c(20,4,1,1));
+plot(hclust(dists))
+dev.off()
+
+# Heatmap of sample-to-sample distances using the Poisson Distance
+suppressMessages(library("PoiClaClu"))
+suppressMessages(library("pheatmap"))
+poisd <- PoissonDistance(t(vsd))
+
+# In order to plot the sample distance matrix with the rows/columns arranged by the distances in our distance matrix, we manually provide sampleDists 
+# to the clustering_distance argument of the pheatmap function. Otherwise the pheatmap function would assume that the matrix contains the data values 
+# themselves, and would calculate distances between the rows/columns of the distance matrix, which is not desired.
+samplePoisDistMatrix <- as.matrix( poisd$dd)
+
+# Change the row names of the distance matrix to contain Treatment and Control instead of sample ID, so that we have all this information in view when looking at the heatmap.
+rownames(samplePoisDistMatrix) <- paste( attr(rld,"colData")$condition, rownames(attr(rld,"colData")),sep="-")
+colnames(samplePoisDistMatrix) <- NULL
+# colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+colors <- colorRampPalette( rev(brewer.pal(9, "Greens")) )(255)
+# colors <- colorRampPalette(rev(c('gold','darkorange','darkred')))(256)
+# colors <- colorRampPalette(c('darkblue','blue','lightblue','white','orange','red','darkred'))(1024)
+pheatmap(samplePoisDistMatrix,
+        clustering_distance_rows=poisd$dd,
+        clustering_distance_cols=poisd$dd,
+        col=colors,
+        fontsize=8)
+
+#par(new=TRUE)
+# Turn off device driver (to flush output to PNG/PDF file)
+dev.off()
 ###############################################################
 #                       DOCUMENTATION
 ###############################################################
