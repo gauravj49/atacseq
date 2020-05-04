@@ -31,7 +31,7 @@ librarySizeDF = peaksDF.sum(axis=0)
 origPeaksDF = peaksDF.copy()
 
 # Filter peaks with sum of peaks less than 75 for all samples
-peaksDF = peaksDF[peaksDF.sum(axis=1) >= 75]
+peaksDF = peaksDF[peaksDF.sum(axis=1) >= sample_pc]
 
 # Get the variance for each peak
 peaksDF['variance'] = peaksDF.var(axis=1)
