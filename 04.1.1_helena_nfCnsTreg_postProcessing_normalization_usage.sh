@@ -2,7 +2,7 @@
 cd /home/rad/users/gaurav/projects/seqAnalysis/atacseq
 
 # Parameters for the script
-species="human"
+species="mouse"
 user="helena"
 projName="cnsTreg"
 outdir="/media/rad/HDD1/atacseq"
